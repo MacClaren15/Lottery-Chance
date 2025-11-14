@@ -1,408 +1,127 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lottery Chances - TOTO Prediction</title>
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <style>
-        body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lottery Chances - Historical Analysis & Probability Prediction</title>
+
+  <!-- React + ReactDOM -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+
+  <!-- Babel for JSX in the browser -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Lucide icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+    }
+  </style>
 </head>
-<body>
-    <div id="root"></div>
-    
-    <script type="text/babel">
-        const { useState, useEffect } = React;
-        const { TrendingUp, Calendar, Hash, Percent, Database, Award, Star, RefreshCw, Plus, Check, X, Upload, FileSpreadsheet } = lucide;
+<body class="bg-slate-100">
+  <div id="root"></div>
 
-        // Simple storage polyfill for browsers without window.storage
-        if (!window.storage) {
-            window.storage = {
-                data: {},
-                async get(key) {
-                    const value = localStorage.getItem(key);
-                    return value ? { key, value } : null;
-                },
-                async set(key, value) {
-                    localStorage.setItem(key, value);
-                    return { key, value };
-                },
-                async delete(key) {
-                    localStorage.removeItem(key);
-                    return { key, deleted: true };
-                }
-            };
+  <script type="text/babel">
+    const { useState, useEffect, useMemo } = React;
+    const {
+      TrendingUp,
+      Calendar,
+      Hash,
+      Percent,
+      Database,
+      Filter,
+      RefreshCw,
+      Plus,
+      Upload,
+      Download,
+    } = lucide;
+
+    // --- Default sample data -------------------------------------------------
+    function getDefaultDraws() {
+      return [
+        { drawNumber: "4128", date: "2025-11-10", numbers: [2, 11, 12, 19, 25, 36], additional: 16 },
+        { drawNumber: "4127", date: "2025-11-06", numbers: [3, 20, 24, 29, 32, 44], additional: 46 },
+        { drawNumber: "4126", date: "2025-11-03", numbers: [10, 19, 22, 34, 39, 43], additional: 35 },
+        { drawNumber: "4125", date: "2025-10-30", numbers: [1, 5, 31, 34, 38, 45], additional: 15 },
+        { drawNumber: "4124", date: "2025-10-27", numbers: [9, 17, 22, 24, 31, 38], additional: 47 },
+        { drawNumber: "4123", date: "2025-10-23", numbers: [3, 10, 14, 29, 31, 46], additional: 12 },
+        { drawNumber: "4122", date: "2025-10-20", numbers: [3, 10, 13, 15, 32, 37], additional: 8 },
+        { drawNumber: "4121", date: "2025-10-16", numbers: [2, 13, 19, 35, 41, 46], additional: 30 },
+        { drawNumber: "4120", date: "2025-10-13", numbers: [2, 5, 19, 28, 34, 46], additional: 31 },
+        { drawNumber: "4119", date: "2025-10-09", numbers: [4, 5, 13, 29, 31, 42], additional: 34 },
+      ];
+    }
+
+    function formatDateDisplay(dateStr) {
+      if (!dateStr) return "-";
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      return d.toLocaleDateString();
+    }
+
+    function App() {
+      const [draws, setDraws] = useState([]);
+      const [lastUpdated, setLastUpdated] = useState(null);
+
+      const [filter, setFilter] = useState({
+        fromDate: "",
+        toDate: "",
+        number: "",
+      });
+
+      const [newDraw, setNewDraw] = useState({
+        drawNumber: "",
+        date: "",
+        numbers: ["", "", "", "", "", ""],
+        additional: "",
+      });
+
+      const [showAddForm, setShowAddForm] = useState(false);
+      const [showFilterForm, setShowFilterForm] = useState(false);
+      const [showImportForm, setShowImportForm] = useState(false);
+      const [importStatus, setImportStatus] = useState("");
+
+      // --- Load from localStorage on first load ------------------------------
+      useEffect(() => {
+        try {
+          const stored = window.localStorage.getItem("lottery-historical-data");
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            if (Array.isArray(parsed.draws)) {
+              setDraws(parsed.draws);
+              setLastUpdated(parsed.lastUpdated || null);
+              return;
+            }
+          }
+        } catch (e) {
+          console.warn("Failed to load data from localStorage", e);
         }
 
-        function LotteryChances() {
-            const [historicalData, setHistoricalData] = useState([]);
-            const [filteredData, setFilteredData] = useState([]);
-            const [numberStats, setNumberStats] = useState([]);
-            const [additionalStats, setAdditionalStats] = useState([]);
-            const [topMainNumbers, setTopMainNumbers] = useState([]);
-            const [topAdditional, setTopAdditional] = useState(null);
-            const [isLoading, setIsLoading] = useState(true);
-            const [lastUpdated, setLastUpdated] = useState(null);
-            const [showAddForm, setShowAddForm] = useState(false);
-            const [showFilterForm, setShowFilterForm] = useState(false);
-            const [showImportForm, setShowImportForm] = useState(false);
-            const [importFile, setImportFile] = useState(null);
-            const [importStatus, setImportStatus] = useState('');
-            const [filterSettings, setFilterSettings] = useState({
-                fromDraw: '',
-                toDraw: '',
-                months: '36'
-            });
-            const [newDraw, setNewDraw] = useState({
-                drawNumber: '',
-                date: '',
-                numbers: ['', '', '', '', '', ''],
-                additional: ''
-            });
+        // If nothing in storage, seed with defaults
+        const defaults = getDefaultDraws();
+        setDraws(defaults);
+        const ts = new Date().toISOString();
+        setLastUpdated(ts);
+        window.localStorage.setItem(
+          "lottery-historical-data",
+          JSON.stringify({ draws: defaults, lastUpdated: ts })
+        );
+      }, []);
 
-            useEffect(() => {
-                loadData();
-            }, []);
-
-            useEffect(() => {
-                if (historicalData.length > 0) {
-                    applyFilters();
-                }
-            }, [historicalData, filterSettings]);
-
-            useEffect(() => {
-                if (filteredData.length > 0) {
-                    calculateAllProbabilities();
-                }
-            }, [filteredData]);
-
-            async function loadData() {
-                setIsLoading(true);
-                try {
-                    const stored = await window.storage.get('lottery-historical-data');
-                    if (stored && stored.value) {
-                        const data = JSON.parse(stored.value);
-                        setHistoricalData(data.draws);
-                        setLastUpdated(data.lastUpdated);
-                    } else {
-                        await initializeDefaultData();
-                    }
-                } catch (error) {
-                    console.error('Error loading data:', error);
-                    await initializeDefaultData();
-                }
-                setIsLoading(false);
-            }
-
-            async function initializeDefaultData() {
-                const defaultDraws = [
-                    { drawNumber: '4128', date: '2025-11-10', numbers: [2, 11, 12, 19, 25, 36], additional: 16 },
-                    { drawNumber: '4127', date: '2025-11-06', numbers: [3, 20, 24, 29, 32, 44], additional: 46 },
-                    { drawNumber: '4126', date: '2025-11-03', numbers: [10, 19, 22, 34, 39, 43], additional: 35 },
-                    { drawNumber: '4125', date: '2025-10-30', numbers: [1, 5, 31, 34, 38, 45], additional: 15 },
-                    { drawNumber: '4124', date: '2025-10-27', numbers: [9, 17, 22, 24, 31, 38], additional: 47 },
-                    { drawNumber: '4123', date: '2025-10-23', numbers: [3, 10, 14, 29, 31, 46], additional: 12 },
-                    { drawNumber: '4122', date: '2025-10-20', numbers: [3, 10, 13, 15, 32, 37], additional: 8 },
-                    { drawNumber: '4121', date: '2025-10-16', numbers: [2, 13, 19, 35, 41, 46], additional: 30 },
-                    { drawNumber: '4120', date: '2025-10-13', numbers: [2, 5, 19, 28, 34, 46], additional: 31 },
-                    { drawNumber: '4119', date: '2025-10-09', numbers: [4, 5, 13, 29, 31, 42], additional: 34 }
-                ];
-
-                await saveData(defaultDraws);
-                setHistoricalData(defaultDraws);
-                setLastUpdated(new Date().toISOString());
-            }
-
-            async function saveData(draws) {
-                try {
-                    const dataToSave = {
-                        draws: draws,
-                        lastUpdated: new Date().toISOString()
-                    };
-                    await window.storage.set('lottery-historical-data', JSON.stringify(dataToSave));
-                    setLastUpdated(dataToSave.lastUpdated);
-                } catch (error) {
-                    console.error('Error saving data:', error);
-                }
-            }
-
-            function formatDateForDisplay(dateString) {
-                const date = new Date(dateString);
-                return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-            }
-
-            async function handleFileImport(event) {
-                const file = event.target.files[0];
-                if (!file) return;
-
-                setImportFile(file);
-                setImportStatus('Reading file...');
-
-                try {
-                    const text = await file.text();
-                    const rows = text.split('\n').map(row => row.trim()).filter(row => row);
-                    
-                    const dataRows = rows.slice(1);
-                    const importedDraws = [];
-                    let errorCount = 0;
-
-                    for (const row of dataRows) {
-                        try {
-                            const cols = row.split(',').map(col => col.trim().replace(/^["']|["']$/g, ''));
-                            
-                            if (cols.length < 8) {
-                                errorCount++;
-                                continue;
-                            }
-
-                            const drawNumber = cols[0];
-                            const date = cols[1];
-                            const numbers = [
-                                parseInt(cols[2]),
-                                parseInt(cols[3]),
-                                parseInt(cols[4]),
-                                parseInt(cols[5]),
-                                parseInt(cols[6]),
-                                parseInt(cols[7])
-                            ].sort((a, b) => a - b);
-                            const additional = parseInt(cols[8]);
-
-                            if (!drawNumber || !date || numbers.some(n => isNaN(n) || n < 1 || n > 49) || isNaN(additional) || additional < 1 || additional > 49) {
-                                errorCount++;
-                                continue;
-                            }
-
-                            if (new Set(numbers).size !== 6) {
-                                errorCount++;
-                                continue;
-                            }
-
-                            importedDraws.push({
-                                drawNumber,
-                                date,
-                                numbers,
-                                additional
-                            });
-                        } catch (e) {
-                            errorCount++;
-                        }
-                    }
-
-                    if (importedDraws.length === 0) {
-                        setImportStatus('Error: No valid data found in file');
-                        return;
-                    }
-
-                    const existingDrawNumbers = new Set(historicalData.map(d => d.drawNumber));
-                    const newDraws = importedDraws.filter(d => !existingDrawNumbers.has(d.drawNumber));
-                    
-                    const combinedDraws = [...newDraws, ...historicalData].sort((a, b) => {
-                        return new Date(b.date) - new Date(a.date);
-                    });
-
-                    const trimmedDraws = combinedDraws.slice(0, 312);
-
-                    await saveData(trimmedDraws);
-                    setHistoricalData(trimmedDraws);
-                    
-                    setImportStatus(`Success! Imported ${newDraws.length} new draws. ${errorCount > 0 ? `Skipped ${errorCount} invalid rows.` : ''}`);
-                    
-                    setTimeout(() => {
-                        setShowImportForm(false);
-                        setImportStatus('');
-                        setImportFile(null);
-                    }, 3000);
-
-                } catch (error) {
-                    setImportStatus(`Error: ${error.message}`);
-                }
-            }
-
-            function downloadTemplate() {
-                const template = `DrawNumber,Date,Number1,Number2,Number3,Number4,Number5,Number6,Additional
-4128,2025-11-07,5,12,18,25,33,41,22
-4127,2025-11-03,10,19,22,34,39,43,35
-4126,2025-10-30,1,5,31,34,38,45,15`;
-
-                const blob = new Blob([template], { type: 'text/csv' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'toto-import-template.csv';
-                a.click();
-                URL.revokeObjectURL(url);
-            }
-
-            function exportData() {
-                let csv = 'DrawNumber,Date,Number1,Number2,Number3,Number4,Number5,Number6,Additional\n';
-                
-                historicalData.forEach(draw => {
-                    csv += `${draw.drawNumber},${draw.date},${draw.numbers.join(',')},${draw.additional}\n`;
-                });
-
-                const blob = new Blob([csv], { type: 'text/csv' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `toto-data-export-${new Date().toISOString().split('T')[0]}.csv`;
-                a.click();
-                URL.revokeObjectURL(url);
-            }
-
-            async function addNewDraw() {
-                const numbers = newDraw.numbers.map(n => parseInt(n)).filter(n => n >= 1 && n <= 49);
-                const additional = parseInt(newDraw.additional);
-
-                if (numbers.length !== 6 || !additional || additional < 1 || additional > 49) {
-                    alert('Please enter 6 valid numbers (1-49) and 1 additional number');
-                    return;
-                }
-
-                if (new Set(numbers).size !== 6) {
-                    alert('All 6 numbers must be unique');
-                    return;
-                }
-
-                if (!newDraw.drawNumber || !newDraw.date) {
-                    alert('Please enter draw number and date');
-                    return;
-                }
-
-                const draw = {
-                    drawNumber: newDraw.drawNumber,
-                    date: newDraw.date,
-                    numbers: numbers.sort((a, b) => a - b),
-                    additional: additional
-                };
-
-                const updatedDraws = [draw, ...historicalData];
-                const trimmedDraws = updatedDraws.slice(0, 312);
-
-                await saveData(trimmedDraws);
-                setHistoricalData(trimmedDraws);
-                
-                setNewDraw({
-                    drawNumber: '',
-                    date: '',
-                    numbers: ['', '', '', '', '', ''],
-                    additional: ''
-                });
-                setShowAddForm(false);
-            }
-
-            function applyFilters() {
-                let filtered = [...historicalData];
-
-                if (filterSettings.fromDraw && filterSettings.toDraw) {
-                    const fromDate = new Date(filterSettings.fromDraw);
-                    const toDate = new Date(filterSettings.toDraw);
-                    
-                    filtered = filtered.filter(draw => {
-                        const drawDate = new Date(draw.date);
-                        return drawDate >= fromDate && drawDate <= toDate;
-                    });
-                } else if (filterSettings.months) {
-                    const months = parseInt(filterSettings.months);
-                    const drawsToKeep = Math.floor((months / 12) * 104);
-                    filtered = filtered.slice(0, drawsToKeep);
-                }
-
-                setFilteredData(filtered);
-            }
-
-            function resetFilters() {
-                setFilterSettings({
-                    fromDraw: '',
-                    toDraw: '',
-                    months: '36'
-                });
-            }
-
-            function calculateAllProbabilities() {
-                const totalDraws = filteredData.length;
-                const mainNumberCounts = {};
-                const additionalNumberCounts = {};
-                
-                for (let i = 1; i <= 49; i++) {
-                    mainNumberCounts[i] = 0;
-                    additionalNumberCounts[i] = 0;
-                }
-                
-                filteredData.forEach(draw => {
-                    draw.numbers.forEach(num => {
-                        mainNumberCounts[num]++;
-                    });
-                    additionalNumberCounts[draw.additional]++;
-                });
-                
-                const mainStats = [];
-                for (let i = 1; i <= 49; i++) {
-                    const count = mainNumberCounts[i];
-                    const probability = ((count / totalDraws) + 0.01) * 100;
-                    mainStats.push({
-                        number: i,
-                        count: count,
-                        probability: Math.min(99.99, Math.max(0.01, probability))
-                    });
-                }
-                
-                const addStats = [];
-                for (let i = 1; i <= 49; i++) {
-                    const count = additionalNumberCounts[i];
-                    const probability = ((count / totalDraws) + 0.01) * 100;
-                    addStats.push({
-                        number: i,
-                        count: count,
-                        probability: Math.min(99.99, Math.max(0.01, probability))
-                    });
-                }
-                
-                mainStats.sort((a, b) => b.probability - a.probability);
-                addStats.sort((a, b) => b.probability - a.probability);
-                
-                setNumberStats(mainStats);
-                setAdditionalStats(addStats);
-                setTopMainNumbers(mainStats.slice(0, 6));
-                setTopAdditional(addStats[0]);
-            }
-
-            function handleNumberInput(index, value) {
-                const newNumbers = [...newDraw.numbers];
-                newNumbers[index] = value;
-                setNewDraw({ ...newDraw, numbers: newNumbers });
-            }
-
-            const totalDraws = filteredData.length;
-            const totalStoredDraws = historicalData.length;
-            const dateRange = filteredData.length > 0 
-                ? `${formatDateForDisplay(filteredData[filteredData.length - 1].date)} - ${formatDateForDisplay(filteredData[0].date)}`
-                : 'Loading...';
-
-            return React.createElement('div', { className: "min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50" },
-                React.createElement('div', { className: "max-w-7xl mx-auto p-6" },
-                    React.createElement('div', { className: "text-center mb-8" },
-                        React.createElement('h1', { className: "text-5xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-3" }, 'Lottery Chances'),
-                        React.createElement('p', { className: "text-gray-600 text-lg" }, 'Historical Data Analysis & Probability Prediction'),
-                        lastUpdated && React.createElement('p', { className: "text-sm text-gray-500 mt-2" }, 
-                            'Last updated: ', new Date(lastUpdated).toLocaleString()
-                        )
-                    ),
-                    React.createElement('div', { className: "text-center mb-6" },
-                        React.createElement('p', { className: "text-2xl font-bold text-indigo-600" }, 
-                            `Analyzing ${totalDraws} draws`
-                        )
-                    )
-                )
-            );
-        }
-
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(React.createElement(LotteryChances));
-    </script>
-</body>
-</html>
+      // --- Save to localStorage whenever draws change ------------------------
+      useEffect(() => {
+        if (!draws || draws.length === 0) return;
+        const ts = new Date().toISOString();
+        setLastUpdated(ts);
+        try {
+          window.localStorage.setItem(
+            "lottery-historical-d
