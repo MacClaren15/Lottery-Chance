@@ -1,127 +1,438 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Lottery Chances - Historical Analysis & Probability Prediction</title>
-
-  <!-- React + ReactDOM -->
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-
-  <!-- Babel for JSX in the browser -->
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- Lucide icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
-
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-        Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lottery Chances - TOTO Prediction</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <style>
+        body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif; }
+    </style>
 </head>
-<body class="bg-slate-100">
-  <div id="root"></div>
+<body>
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        const { TrendingUp, Calendar, Hash, Percent, Database, Award, Star, Plus, Check, X, Upload, FileSpreadsheet } = lucide;
 
-  <script type="text/babel">
-    const { useState, useEffect, useMemo } = React;
-    const {
-      TrendingUp,
-      Calendar,
-      Hash,
-      Percent,
-      Database,
-      Filter,
-      RefreshCw,
-      Plus,
-      Upload,
-      Download,
-    } = lucide;
-
-    // --- Default sample data -------------------------------------------------
-    function getDefaultDraws() {
-      return [
-        { drawNumber: "4128", date: "2025-11-10", numbers: [2, 11, 12, 19, 25, 36], additional: 16 },
-        { drawNumber: "4127", date: "2025-11-06", numbers: [3, 20, 24, 29, 32, 44], additional: 46 },
-        { drawNumber: "4126", date: "2025-11-03", numbers: [10, 19, 22, 34, 39, 43], additional: 35 },
-        { drawNumber: "4125", date: "2025-10-30", numbers: [1, 5, 31, 34, 38, 45], additional: 15 },
-        { drawNumber: "4124", date: "2025-10-27", numbers: [9, 17, 22, 24, 31, 38], additional: 47 },
-        { drawNumber: "4123", date: "2025-10-23", numbers: [3, 10, 14, 29, 31, 46], additional: 12 },
-        { drawNumber: "4122", date: "2025-10-20", numbers: [3, 10, 13, 15, 32, 37], additional: 8 },
-        { drawNumber: "4121", date: "2025-10-16", numbers: [2, 13, 19, 35, 41, 46], additional: 30 },
-        { drawNumber: "4120", date: "2025-10-13", numbers: [2, 5, 19, 28, 34, 46], additional: 31 },
-        { drawNumber: "4119", date: "2025-10-09", numbers: [4, 5, 13, 29, 31, 42], additional: 34 },
-      ];
-    }
-
-    function formatDateDisplay(dateStr) {
-      if (!dateStr) return "-";
-      const d = new Date(dateStr);
-      if (isNaN(d.getTime())) return dateStr;
-      return d.toLocaleDateString();
-    }
-
-    function App() {
-      const [draws, setDraws] = useState([]);
-      const [lastUpdated, setLastUpdated] = useState(null);
-
-      const [filter, setFilter] = useState({
-        fromDate: "",
-        toDate: "",
-        number: "",
-      });
-
-      const [newDraw, setNewDraw] = useState({
-        drawNumber: "",
-        date: "",
-        numbers: ["", "", "", "", "", ""],
-        additional: "",
-      });
-
-      const [showAddForm, setShowAddForm] = useState(false);
-      const [showFilterForm, setShowFilterForm] = useState(false);
-      const [showImportForm, setShowImportForm] = useState(false);
-      const [importStatus, setImportStatus] = useState("");
-
-      // --- Load from localStorage on first load ------------------------------
-      useEffect(() => {
-        try {
-          const stored = window.localStorage.getItem("lottery-historical-data");
-          if (stored) {
-            const parsed = JSON.parse(stored);
-            if (Array.isArray(parsed.draws)) {
-              setDraws(parsed.draws);
-              setLastUpdated(parsed.lastUpdated || null);
-              return;
-            }
-          }
-        } catch (e) {
-          console.warn("Failed to load data from localStorage", e);
+        // Storage polyfill
+        if (!window.storage) {
+            window.storage = {
+                async get(key) {
+                    try {
+                        const value = localStorage.getItem(key);
+                        return value ? { key, value } : null;
+                    } catch (e) {
+                        return null;
+                    }
+                },
+                async set(key, value) {
+                    try {
+                        localStorage.setItem(key, value);
+                        return { key, value };
+                    } catch (e) {
+                        return null;
+                    }
+                }
+            };
         }
 
-        // If nothing in storage, seed with defaults
-        const defaults = getDefaultDraws();
-        setDraws(defaults);
-        const ts = new Date().toISOString();
-        setLastUpdated(ts);
-        window.localStorage.setItem(
-          "lottery-historical-data",
-          JSON.stringify({ draws: defaults, lastUpdated: ts })
-        );
-      }, []);
+        function Icon({ icon: IconComponent, ...props }) {
+            return <IconComponent {...props} />;
+        }
 
-      // --- Save to localStorage whenever draws change ------------------------
-      useEffect(() => {
-        if (!draws || draws.length === 0) return;
-        const ts = new Date().toISOString();
-        setLastUpdated(ts);
-        try {
-          window.localStorage.setItem(
-            "lottery-historical-d
+        function LotteryChances() {
+            const [historicalData, setHistoricalData] = useState([]);
+            const [filteredData, setFilteredData] = useState([]);
+            const [numberStats, setNumberStats] = useState([]);
+            const [additionalStats, setAdditionalStats] = useState([]);
+            const [topMainNumbers, setTopMainNumbers] = useState([]);
+            const [topAdditional, setTopAdditional] = useState(null);
+            const [isLoading, setIsLoading] = useState(true);
+            const [lastUpdated, setLastUpdated] = useState(null);
+            const [showAddForm, setShowAddForm] = useState(false);
+            const [showFilterForm, setShowFilterForm] = useState(false);
+            const [showImportForm, setShowImportForm] = useState(false);
+            const [importFile, setImportFile] = useState(null);
+            const [importStatus, setImportStatus] = useState('');
+            const [filterSettings, setFilterSettings] = useState({
+                fromDraw: '',
+                toDraw: '',
+                months: '36'
+            });
+            const [newDraw, setNewDraw] = useState({
+                drawNumber: '',
+                date: '',
+                numbers: ['', '', '', '', '', ''],
+                additional: ''
+            });
+
+            useEffect(() => {
+                loadData();
+            }, []);
+
+            useEffect(() => {
+                if (historicalData.length > 0) {
+                    applyFilters();
+                }
+            }, [historicalData, filterSettings]);
+
+            useEffect(() => {
+                if (filteredData.length > 0) {
+                    calculateAllProbabilities();
+                }
+            }, [filteredData]);
+
+            async function loadData() {
+                setIsLoading(true);
+                try {
+                    const stored = await window.storage.get('lottery-historical-data');
+                    if (stored && stored.value) {
+                        const data = JSON.parse(stored.value);
+                        setHistoricalData(data.draws);
+                        setLastUpdated(data.lastUpdated);
+                    } else {
+                        await initializeDefaultData();
+                    }
+                } catch (error) {
+                    console.error('Error loading data:', error);
+                    await initializeDefaultData();
+                }
+                setIsLoading(false);
+            }
+
+            async function initializeDefaultData() {
+                const defaultDraws = [
+                    { drawNumber: '4128', date: '2025-11-10', numbers: [2, 11, 12, 19, 25, 36], additional: 16 },
+                    { drawNumber: '4127', date: '2025-11-06', numbers: [3, 20, 24, 29, 32, 44], additional: 46 },
+                    { drawNumber: '4126', date: '2025-11-03', numbers: [10, 19, 22, 34, 39, 43], additional: 35 },
+                    { drawNumber: '4125', date: '2025-10-30', numbers: [1, 5, 31, 34, 38, 45], additional: 15 },
+                    { drawNumber: '4124', date: '2025-10-27', numbers: [9, 17, 22, 24, 31, 38], additional: 47 },
+                    { drawNumber: '4123', date: '2025-10-23', numbers: [3, 10, 14, 29, 31, 46], additional: 12 },
+                    { drawNumber: '4122', date: '2025-10-20', numbers: [3, 10, 13, 15, 32, 37], additional: 8 },
+                    { drawNumber: '4121', date: '2025-10-16', numbers: [2, 13, 19, 35, 41, 46], additional: 30 },
+                    { drawNumber: '4120', date: '2025-10-13', numbers: [2, 5, 19, 28, 34, 46], additional: 31 },
+                    { drawNumber: '4119', date: '2025-10-09', numbers: [4, 5, 13, 29, 31, 42], additional: 34 },
+                    { drawNumber: '4118', date: '2025-10-06', numbers: [5, 12, 15, 21, 24, 38], additional: 49 },
+                    { drawNumber: '4117', date: '2025-10-02', numbers: [7, 16, 29, 31, 32, 42], additional: 18 },
+                    { drawNumber: '4116', date: '2025-09-29', numbers: [8, 14, 16, 29, 43, 45], additional: 35 },
+                    { drawNumber: '4115', date: '2025-09-25', numbers: [6, 12, 27, 35, 43, 46], additional: 9 },
+                    { drawNumber: '4114', date: '2025-09-22', numbers: [10, 15, 22, 34, 36, 45], additional: 11 },
+                    { drawNumber: '4113', date: '2025-09-18', numbers: [2, 11, 28, 35, 36, 41], additional: 44 },
+                    { drawNumber: '4112', date: '2025-09-15', numbers: [2, 3, 24, 25, 34, 48], additional: 19 },
+                    { drawNumber: '4111', date: '2025-09-11', numbers: [3, 18, 19, 24, 31, 46], additional: 25 },
+                    { drawNumber: '4110', date: '2025-09-08', numbers: [3, 4, 15, 35, 38, 42], additional: 27 },
+                    { drawNumber: '4109', date: '2025-09-04', numbers: [4, 8, 12, 34, 37, 43], additional: 29 }
+                ];
+
+                await saveData(defaultDraws);
+                setHistoricalData(defaultDraws);
+                setLastUpdated(new Date().toISOString());
+            }
+
+            async function saveData(draws) {
+                try {
+                    const dataToSave = {
+                        draws: draws,
+                        lastUpdated: new Date().toISOString()
+                    };
+                    await window.storage.set('lottery-historical-data', JSON.stringify(dataToSave));
+                    setLastUpdated(dataToSave.lastUpdated);
+                } catch (error) {
+                    console.error('Error saving data:', error);
+                }
+            }
+
+            function applyFilters() {
+                let filtered = [...historicalData];
+
+                if (filterSettings.fromDraw && filterSettings.toDraw) {
+                    const fromDate = new Date(filterSettings.fromDraw);
+                    const toDate = new Date(filterSettings.toDraw);
+                    
+                    filtered = filtered.filter(draw => {
+                        const drawDate = new Date(draw.date);
+                        return drawDate >= fromDate && drawDate <= toDate;
+                    });
+                } else if (filterSettings.months) {
+                    const months = parseInt(filterSettings.months);
+                    const drawsToKeep = Math.floor((months / 12) * 104);
+                    filtered = filtered.slice(0, drawsToKeep);
+                }
+
+                setFilteredData(filtered);
+            }
+
+            function calculateAllProbabilities() {
+                const totalDraws = filteredData.length;
+                const mainNumberCounts = {};
+                const additionalNumberCounts = {};
+                
+                for (let i = 1; i <= 49; i++) {
+                    mainNumberCounts[i] = 0;
+                    additionalNumberCounts[i] = 0;
+                }
+                
+                filteredData.forEach(draw => {
+                    draw.numbers.forEach(num => {
+                        mainNumberCounts[num]++;
+                    });
+                    additionalNumberCounts[draw.additional]++;
+                });
+                
+                const mainStats = [];
+                for (let i = 1; i <= 49; i++) {
+                    const count = mainNumberCounts[i];
+                    const probability = ((count / totalDraws) + 0.01) * 100;
+                    mainStats.push({
+                        number: i,
+                        count: count,
+                        probability: Math.min(99.99, Math.max(0.01, probability))
+                    });
+                }
+                
+                const addStats = [];
+                for (let i = 1; i <= 49; i++) {
+                    const count = additionalNumberCounts[i];
+                    const probability = ((count / totalDraws) + 0.01) * 100;
+                    addStats.push({
+                        number: i,
+                        count: count,
+                        probability: Math.min(99.99, Math.max(0.01, probability))
+                    });
+                }
+                
+                mainStats.sort((a, b) => b.probability - a.probability);
+                addStats.sort((a, b) => b.probability - a.probability);
+                
+                setNumberStats(mainStats);
+                setAdditionalStats(addStats);
+                setTopMainNumbers(mainStats.slice(0, 6));
+                setTopAdditional(addStats[0]);
+            }
+
+            const totalDraws = filteredData.length;
+            const totalStoredDraws = historicalData.length;
+            const dateRange = filteredData.length > 0 
+                ? `${new Date(filteredData[filteredData.length - 1].date).toLocaleDateString('en-GB')} - ${new Date(filteredData[0].date).toLocaleDateString('en-GB')}`
+                : 'Loading...';
+
+            if (isLoading) {
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center">
+                        <div className="text-center">
+                            <h1 className="text-4xl font-bold text-indigo-600 mb-4">Loading...</h1>
+                            <p className="text-gray-600">Initializing Lottery Chances</p>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+                    <div className="max-w-7xl mx-auto p-6">
+                        <div className="text-center mb-8">
+                            <h1 className="text-5xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-3">
+                                Lottery Chances
+                            </h1>
+                            <p className="text-gray-600 text-lg">Historical Data Analysis & Probability Prediction</p>
+                            {lastUpdated && (
+                                <p className="text-sm text-gray-500 mt-2">
+                                    Last updated: {new Date(lastUpdated).toLocaleString()}
+                                </p>
+                            )}
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                            <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
+                                <div className="flex items-center gap-3">
+                                    <div className="bg-purple-100 p-3 rounded-lg">
+                                        <Icon icon={Calendar} className="text-purple-600" size={24} />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-gray-500">Storage Period</p>
+                                        <p className="text-sm font-semibold text-gray-800">3 Years ({totalStoredDraws} draws)</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
+                                <div className="flex items-center gap-3">
+                                    <div className="bg-pink-100 p-3 rounded-lg">
+                                        <Icon icon={Hash} className="text-pink-600" size={24} />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-gray-500">Active Data Range ({totalDraws} draws)</p>
+                                        <p className="text-xs font-semibold text-gray-800">{dateRange}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl shadow-2xl p-8 mb-8 text-white">
+                            <div className="flex items-center gap-3 mb-6">
+                                <Icon icon={Award} className="text-yellow-300" size={32} />
+                                <h2 className="text-3xl font-bold">Recommended Numbers (Highest Probability)</h2>
+                            </div>
+
+                            <div className="grid md:grid-cols-2 gap-6">
+                                <div>
+                                    <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                                        <Icon icon={Star} className="text-yellow-300" size={20} />
+                                        Top 6 Main Numbers
+                                    </h3>
+                                    <div className="grid grid-cols-3 gap-3">
+                                        {topMainNumbers.map((stat) => (
+                                            <div key={stat.number} className="bg-white bg-opacity-20 backdrop-blur-sm rounded-xl p-4 text-center border border-white border-opacity-30">
+                                                <div className="text-4xl font-bold text-yellow-300 mb-2">
+                                                    {stat.number.toString().padStart(2, '0')}
+                                                </div>
+                                                <div className="text-sm opacity-90">
+                                                    {stat.probability.toFixed(2)}%
+                                                </div>
+                                                <div className="text-xs opacity-75 mt-1">
+                                                    ({stat.count} times)
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                                        <Icon icon={Star} className="text-orange-300" size={20} />
+                                        Top Additional Number
+                                    </h3>
+                                    {topAdditional && (
+                                        <div className="bg-white bg-opacity-20 backdrop-blur-sm rounded-xl p-6 text-center border border-white border-opacity-30 max-w-xs">
+                                            <div className="text-6xl font-bold text-orange-300 mb-3">
+                                                {topAdditional.number.toString().padStart(2, '0')}
+                                            </div>
+                                            <div className="text-xl font-semibold">
+                                                {topAdditional.probability.toFixed(2)}%
+                                            </div>
+                                            <div className="text-sm opacity-75 mt-2">
+                                                Appeared {topAdditional.count} times
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8 border border-gray-100">
+                            <div className="flex items-center gap-3 mb-6">
+                                <Icon icon={TrendingUp} className="text-indigo-600" size={28} />
+                                <h2 className="text-2xl font-bold text-gray-800">All Main Numbers Probability (1-49)</h2>
+                            </div>
+
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
+                                {numberStats.map((stat) => (
+                                    <div 
+                                        key={stat.number} 
+                                        className={`rounded-lg p-3 border-2 ${
+                                            topMainNumbers.some(top => top.number === stat.number)
+                                                ? 'bg-gradient-to-br from-indigo-50 to-purple-50 border-indigo-400'
+                                                : 'bg-gray-50 border-gray-200'
+                                        }`}
+                                    >
+                                        <div className="text-center">
+                                            <div className={`text-2xl font-bold mb-1 ${
+                                                topMainNumbers.some(top => top.number === stat.number)
+                                                    ? 'text-indigo-600'
+                                                    : 'text-gray-700'
+                                            }`}>
+                                                {stat.number.toString().padStart(2, '0')}
+                                            </div>
+                                            <div className="text-xs font-semibold text-gray-600">
+                                                {stat.probability.toFixed(2)}%
+                                            </div>
+                                            <div className="text-xs text-gray-500 mt-1">
+                                                {stat.count}x
+                                            </div>
+                                            <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2">
+                                                <div
+                                                    className={`h-1.5 rounded-full ${
+                                                        topMainNumbers.some(top => top.number === stat.number)
+                                                            ? 'bg-gradient-to-r from-indigo-500 to-purple-500'
+                                                            : 'bg-gray-400'
+                                                    }`}
+                                                    style={{ width: `${Math.min(100, stat.probability)}%` }}
+                                                ></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8 border border-gray-100">
+                            <div className="flex items-center gap-3 mb-6">
+                                <Icon icon={Percent} className="text-orange-600" size={28} />
+                                <h2 className="text-2xl font-bold text-gray-800">All Additional Numbers Probability (1-49)</h2>
+                            </div>
+
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
+                                {additionalStats.map((stat) => (
+                                    <div 
+                                        key={stat.number} 
+                                        className={`rounded-lg p-3 border-2 ${
+                                            topAdditional && topAdditional.number === stat.number
+                                                ? 'bg-gradient-to-br from-orange-50 to-red-50 border-orange-400'
+                                                : 'bg-gray-50 border-gray-200'
+                                        }`}
+                                    >
+                                        <div className="text-center">
+                                            <div className={`text-2xl font-bold mb-1 ${
+                                                topAdditional && topAdditional.number === stat.number
+                                                    ? 'text-orange-600'
+                                                    : 'text-gray-700'
+                                            }`}>
+                                                {stat.number.toString().padStart(2, '0')}
+                                            </div>
+                                            <div className="text-xs font-semibold text-gray-600">
+                                                {stat.probability.toFixed(2)}%
+                                            </div>
+                                            <div className="text-xs text-gray-500 mt-1">
+                                                {stat.count}x
+                                            </div>
+                                            <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2">
+                                                <div
+                                                    className={`h-1.5 rounded-full ${
+                                                        topAdditional && topAdditional.number === stat.number
+                                                            ? 'bg-gradient-to-r from-orange-500 to-red-500'
+                                                            : 'bg-gray-400'
+                                                    }`}
+                                                    style={{ width: `${Math.min(100, stat.probability)}%` }}
+                                                ></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="mt-8 bg-indigo-50 rounded-xl p-6 border border-indigo-200">
+                            <h3 className="text-lg font-semibold text-indigo-900 mb-2">Algorithm</h3>
+                            <p className="text-indigo-700">
+                                Probability = ((Number of occurrences / Total draws) + 0.01) × 100%
+                            </p>
+                            <p className="text-sm text-indigo-600 mt-2">
+                                Maximum 3 years of data stored. Currently analyzing {totalDraws} draws.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<LotteryChances />);
+    </script>
+</body>
+</html>
