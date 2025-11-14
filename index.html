@@ -6,44 +6,59 @@
     <title>Lottery Chances - TOTO Prediction</title>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone@7.23.5/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     <style>
-        body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif; }
+        body { 
+            margin: 0; 
+            padding: 0; 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+        }
+        #root { min-height: 100vh; }
+        .loading { 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            min-height: 100vh; 
+            background: linear-gradient(to bottom right, #eef2ff, #faf5ff);
+        }
     </style>
 </head>
 <body>
-    <div id="root"></div>
+    <div id="root">
+        <div class="loading">
+            <div style="text-align: center;">
+                <h1 style="font-size: 2rem; color: #4f46e5; margin-bottom: 1rem;">Loading Lottery Chances...</h1>
+                <p style="color: #6b7280;">Please wait while we initialize the app</p>
+            </div>
+        </div>
+    </div>
     
     <script type="text/babel">
         const { useState, useEffect } = React;
-        const { TrendingUp, Calendar, Hash, Percent, Database, Award, Star, Plus, Check, X, Upload, FileSpreadsheet } = lucide;
 
-        // Storage polyfill
-        if (!window.storage) {
-            window.storage = {
-                async get(key) {
-                    try {
-                        const value = localStorage.getItem(key);
-                        return value ? { key, value } : null;
-                    } catch (e) {
-                        return null;
-                    }
-                },
-                async set(key, value) {
-                    try {
-                        localStorage.setItem(key, value);
-                        return { key, value };
-                    } catch (e) {
-                        return null;
-                    }
+        // Storage implementation
+        const storage = {
+            async get(key) {
+                try {
+                    const value = localStorage.getItem(key);
+                    return value ? { key, value } : null;
+                } catch (e) {
+                    return null;
                 }
-            };
-        }
+            },
+            async set(key, value) {
+                try {
+                    localStorage.setItem(key, value);
+                    return { key, value };
+                } catch (e) {
+                    return null;
+                }
+            }
+        };
 
-        function Icon({ icon: IconComponent, ...props }) {
-            return <IconComponent {...props} />;
+        if (!window.storage) {
+            window.storage = storage;
         }
 
         function LotteryChances() {
@@ -55,22 +70,6 @@
             const [topAdditional, setTopAdditional] = useState(null);
             const [isLoading, setIsLoading] = useState(true);
             const [lastUpdated, setLastUpdated] = useState(null);
-            const [showAddForm, setShowAddForm] = useState(false);
-            const [showFilterForm, setShowFilterForm] = useState(false);
-            const [showImportForm, setShowImportForm] = useState(false);
-            const [importFile, setImportFile] = useState(null);
-            const [importStatus, setImportStatus] = useState('');
-            const [filterSettings, setFilterSettings] = useState({
-                fromDraw: '',
-                toDraw: '',
-                months: '36'
-            });
-            const [newDraw, setNewDraw] = useState({
-                drawNumber: '',
-                date: '',
-                numbers: ['', '', '', '', '', ''],
-                additional: ''
-            });
 
             useEffect(() => {
                 loadData();
@@ -78,9 +77,9 @@
 
             useEffect(() => {
                 if (historicalData.length > 0) {
-                    applyFilters();
+                    setFilteredData(historicalData);
                 }
-            }, [historicalData, filterSettings]);
+            }, [historicalData]);
 
             useEffect(() => {
                 if (filteredData.length > 0) {
@@ -91,7 +90,7 @@
             async function loadData() {
                 setIsLoading(true);
                 try {
-                    const stored = await window.storage.get('lottery-historical-data');
+                    const stored = await storage.get('lottery-historical-data');
                     if (stored && stored.value) {
                         const data = JSON.parse(stored.value);
                         setHistoricalData(data.draws);
@@ -130,42 +129,13 @@
                     { drawNumber: '4109', date: '2025-09-04', numbers: [4, 8, 12, 34, 37, 43], additional: 29 }
                 ];
 
-                await saveData(defaultDraws);
+                const dataToSave = {
+                    draws: defaultDraws,
+                    lastUpdated: new Date().toISOString()
+                };
+                await storage.set('lottery-historical-data', JSON.stringify(dataToSave));
                 setHistoricalData(defaultDraws);
-                setLastUpdated(new Date().toISOString());
-            }
-
-            async function saveData(draws) {
-                try {
-                    const dataToSave = {
-                        draws: draws,
-                        lastUpdated: new Date().toISOString()
-                    };
-                    await window.storage.set('lottery-historical-data', JSON.stringify(dataToSave));
-                    setLastUpdated(dataToSave.lastUpdated);
-                } catch (error) {
-                    console.error('Error saving data:', error);
-                }
-            }
-
-            function applyFilters() {
-                let filtered = [...historicalData];
-
-                if (filterSettings.fromDraw && filterSettings.toDraw) {
-                    const fromDate = new Date(filterSettings.fromDraw);
-                    const toDate = new Date(filterSettings.toDraw);
-                    
-                    filtered = filtered.filter(draw => {
-                        const drawDate = new Date(draw.date);
-                        return drawDate >= fromDate && drawDate <= toDate;
-                    });
-                } else if (filterSettings.months) {
-                    const months = parseInt(filterSettings.months);
-                    const drawsToKeep = Math.floor((months / 12) * 104);
-                    filtered = filtered.slice(0, drawsToKeep);
-                }
-
-                setFilteredData(filtered);
+                setLastUpdated(dataToSave.lastUpdated);
             }
 
             function calculateAllProbabilities() {
@@ -217,10 +187,9 @@
             }
 
             const totalDraws = filteredData.length;
-            const totalStoredDraws = historicalData.length;
             const dateRange = filteredData.length > 0 
                 ? `${new Date(filteredData[filteredData.length - 1].date).toLocaleDateString('en-GB')} - ${new Date(filteredData[0].date).toLocaleDateString('en-GB')}`
-                : 'Loading...';
+                : '';
 
             if (isLoading) {
                 return (
@@ -235,114 +204,69 @@
 
             return (
                 <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
-                    <div className="max-w-7xl mx-auto p-6">
+                    <div className="max-w-7xl mx-auto p-4 md:p-6">
                         <div className="text-center mb-8">
-                            <h1 className="text-5xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-3">
+                            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-3">
                                 Lottery Chances
                             </h1>
-                            <p className="text-gray-600 text-lg">Historical Data Analysis & Probability Prediction</p>
-                            {lastUpdated && (
-                                <p className="text-sm text-gray-500 mt-2">
-                                    Last updated: {new Date(lastUpdated).toLocaleString()}
-                                </p>
-                            )}
+                            <p className="text-gray-600 text-base md:text-lg">Historical Data Analysis & Probability Prediction</p>
+                            <p className="text-sm text-gray-500 mt-2">Analyzing {totalDraws} draws</p>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                            <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
-                                <div className="flex items-center gap-3">
-                                    <div className="bg-purple-100 p-3 rounded-lg">
-                                        <Icon icon={Calendar} className="text-purple-600" size={24} />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm text-gray-500">Storage Period</p>
-                                        <p className="text-sm font-semibold text-gray-800">3 Years ({totalStoredDraws} draws)</p>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
-                                <div className="flex items-center gap-3">
-                                    <div className="bg-pink-100 p-3 rounded-lg">
-                                        <Icon icon={Hash} className="text-pink-600" size={24} />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm text-gray-500">Active Data Range ({totalDraws} draws)</p>
-                                        <p className="text-xs font-semibold text-gray-800">{dateRange}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <div className="bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl shadow-2xl p-6 md:p-8 mb-8 text-white">
+                            <h2 className="text-2xl md:text-3xl font-bold mb-6 text-center">Top Recommended Numbers</h2>
 
-                        <div className="bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl shadow-2xl p-8 mb-8 text-white">
-                            <div className="flex items-center gap-3 mb-6">
-                                <Icon icon={Award} className="text-yellow-300" size={32} />
-                                <h2 className="text-3xl font-bold">Recommended Numbers (Highest Probability)</h2>
-                            </div>
-
-                            <div className="grid md:grid-cols-2 gap-6">
-                                <div>
-                                    <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                                        <Icon icon={Star} className="text-yellow-300" size={20} />
-                                        Top 6 Main Numbers
-                                    </h3>
-                                    <div className="grid grid-cols-3 gap-3">
-                                        {topMainNumbers.map((stat) => (
-                                            <div key={stat.number} className="bg-white bg-opacity-20 backdrop-blur-sm rounded-xl p-4 text-center border border-white border-opacity-30">
-                                                <div className="text-4xl font-bold text-yellow-300 mb-2">
-                                                    {stat.number.toString().padStart(2, '0')}
-                                                </div>
-                                                <div className="text-sm opacity-90">
-                                                    {stat.probability.toFixed(2)}%
-                                                </div>
-                                                <div className="text-xs opacity-75 mt-1">
-                                                    ({stat.count} times)
-                                                </div>
+                            <div className="mb-6">
+                                <h3 className="text-lg md:text-xl font-semibold mb-4">Top 6 Main Numbers</h3>
+                                <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+                                    {topMainNumbers.map((stat) => (
+                                        <div key={stat.number} className="bg-white bg-opacity-20 backdrop-blur-sm rounded-xl p-3 md:p-4 text-center border border-white border-opacity-30">
+                                            <div className="text-3xl md:text-4xl font-bold text-yellow-300 mb-2">
+                                                {stat.number.toString().padStart(2, '0')}
                                             </div>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                                        <Icon icon={Star} className="text-orange-300" size={20} />
-                                        Top Additional Number
-                                    </h3>
-                                    {topAdditional && (
-                                        <div className="bg-white bg-opacity-20 backdrop-blur-sm rounded-xl p-6 text-center border border-white border-opacity-30 max-w-xs">
-                                            <div className="text-6xl font-bold text-orange-300 mb-3">
-                                                {topAdditional.number.toString().padStart(2, '0')}
+                                            <div className="text-xs md:text-sm opacity-90">
+                                                {stat.probability.toFixed(2)}%
                                             </div>
-                                            <div className="text-xl font-semibold">
-                                                {topAdditional.probability.toFixed(2)}%
-                                            </div>
-                                            <div className="text-sm opacity-75 mt-2">
-                                                Appeared {topAdditional.count} times
+                                            <div className="text-xs opacity-75 mt-1">
+                                                ({stat.count}x)
                                             </div>
                                         </div>
-                                    )}
+                                    ))}
                                 </div>
+                            </div>
+
+                            <div>
+                                <h3 className="text-lg md:text-xl font-semibold mb-4">Top Additional Number</h3>
+                                {topAdditional && (
+                                    <div className="bg-white bg-opacity-20 backdrop-blur-sm rounded-xl p-6 text-center border border-white border-opacity-30 max-w-xs mx-auto">
+                                        <div className="text-5xl md:text-6xl font-bold text-orange-300 mb-3">
+                                            {topAdditional.number.toString().padStart(2, '0')}
+                                        </div>
+                                        <div className="text-lg md:text-xl font-semibold">
+                                            {topAdditional.probability.toFixed(2)}%
+                                        </div>
+                                        <div className="text-sm opacity-75 mt-2">
+                                            Appeared {topAdditional.count} times
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
-                        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8 border border-gray-100">
-                            <div className="flex items-center gap-3 mb-6">
-                                <Icon icon={TrendingUp} className="text-indigo-600" size={28} />
-                                <h2 className="text-2xl font-bold text-gray-800">All Main Numbers Probability (1-49)</h2>
-                            </div>
-
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
+                        <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8 mb-8 border border-gray-100">
+                            <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-6">All Main Numbers (1-49)</h2>
+                            <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-7 gap-2 md:gap-3">
                                 {numberStats.map((stat) => (
                                     <div 
                                         key={stat.number} 
-                                        className={`rounded-lg p-3 border-2 ${
+                                        className={`rounded-lg p-2 md:p-3 border-2 ${
                                             topMainNumbers.some(top => top.number === stat.number)
                                                 ? 'bg-gradient-to-br from-indigo-50 to-purple-50 border-indigo-400'
                                                 : 'bg-gray-50 border-gray-200'
                                         }`}
                                     >
                                         <div className="text-center">
-                                            <div className={`text-2xl font-bold mb-1 ${
+                                            <div className={`text-xl md:text-2xl font-bold mb-1 ${
                                                 topMainNumbers.some(top => top.number === stat.number)
                                                     ? 'text-indigo-600'
                                                     : 'text-gray-700'
@@ -350,20 +274,10 @@
                                                 {stat.number.toString().padStart(2, '0')}
                                             </div>
                                             <div className="text-xs font-semibold text-gray-600">
-                                                {stat.probability.toFixed(2)}%
+                                                {stat.probability.toFixed(1)}%
                                             </div>
                                             <div className="text-xs text-gray-500 mt-1">
                                                 {stat.count}x
-                                            </div>
-                                            <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2">
-                                                <div
-                                                    className={`h-1.5 rounded-full ${
-                                                        topMainNumbers.some(top => top.number === stat.number)
-                                                            ? 'bg-gradient-to-r from-indigo-500 to-purple-500'
-                                                            : 'bg-gray-400'
-                                                    }`}
-                                                    style={{ width: `${Math.min(100, stat.probability)}%` }}
-                                                ></div>
                                             </div>
                                         </div>
                                     </div>
@@ -371,24 +285,20 @@
                             </div>
                         </div>
 
-                        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8 border border-gray-100">
-                            <div className="flex items-center gap-3 mb-6">
-                                <Icon icon={Percent} className="text-orange-600" size={28} />
-                                <h2 className="text-2xl font-bold text-gray-800">All Additional Numbers Probability (1-49)</h2>
-                            </div>
-
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
+                        <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8 mb-8 border border-gray-100">
+                            <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-6">All Additional Numbers (1-49)</h2>
+                            <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-7 gap-2 md:gap-3">
                                 {additionalStats.map((stat) => (
                                     <div 
                                         key={stat.number} 
-                                        className={`rounded-lg p-3 border-2 ${
+                                        className={`rounded-lg p-2 md:p-3 border-2 ${
                                             topAdditional && topAdditional.number === stat.number
                                                 ? 'bg-gradient-to-br from-orange-50 to-red-50 border-orange-400'
                                                 : 'bg-gray-50 border-gray-200'
                                         }`}
                                     >
                                         <div className="text-center">
-                                            <div className={`text-2xl font-bold mb-1 ${
+                                            <div className={`text-xl md:text-2xl font-bold mb-1 ${
                                                 topAdditional && topAdditional.number === stat.number
                                                     ? 'text-orange-600'
                                                     : 'text-gray-700'
@@ -396,20 +306,10 @@
                                                 {stat.number.toString().padStart(2, '0')}
                                             </div>
                                             <div className="text-xs font-semibold text-gray-600">
-                                                {stat.probability.toFixed(2)}%
+                                                {stat.probability.toFixed(1)}%
                                             </div>
                                             <div className="text-xs text-gray-500 mt-1">
                                                 {stat.count}x
-                                            </div>
-                                            <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2">
-                                                <div
-                                                    className={`h-1.5 rounded-full ${
-                                                        topAdditional && topAdditional.number === stat.number
-                                                            ? 'bg-gradient-to-r from-orange-500 to-red-500'
-                                                            : 'bg-gray-400'
-                                                    }`}
-                                                    style={{ width: `${Math.min(100, stat.probability)}%` }}
-                                                ></div>
                                             </div>
                                         </div>
                                     </div>
@@ -417,13 +317,13 @@
                             </div>
                         </div>
 
-                        <div className="mt-8 bg-indigo-50 rounded-xl p-6 border border-indigo-200">
-                            <h3 className="text-lg font-semibold text-indigo-900 mb-2">Algorithm</h3>
-                            <p className="text-indigo-700">
-                                Probability = ((Number of occurrences / Total draws) + 0.01) × 100%
+                        <div className="bg-indigo-50 rounded-xl p-4 md:p-6 border border-indigo-200">
+                            <h3 className="text-base md:text-lg font-semibold text-indigo-900 mb-2">Algorithm</h3>
+                            <p className="text-sm md:text-base text-indigo-700">
+                                Probability = ((Occurrences / Total draws) + 0.01) × 100%
                             </p>
-                            <p className="text-sm text-indigo-600 mt-2">
-                                Maximum 3 years of data stored. Currently analyzing {totalDraws} draws.
+                            <p className="text-xs md:text-sm text-indigo-600 mt-2">
+                                Data range: {dateRange}
                             </p>
                         </div>
                     </div>
@@ -431,8 +331,22 @@
             );
         }
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<LotteryChances />);
+        // Wait for DOM and React to be ready
+        window.addEventListener('DOMContentLoaded', () => {
+            try {
+                const root = ReactDOM.createRoot(document.getElementById('root'));
+                root.render(<LotteryChances />);
+            } catch (error) {
+                console.error('Error rendering app:', error);
+                document.getElementById('root').innerHTML = `
+                    <div style="padding: 2rem; text-align: center;">
+                        <h1 style="color: red;">Error loading app</h1>
+                        <p>${error.message}</p>
+                        <p>Please refresh the page or contact support.</p>
+                    </div>
+                `;
+            }
+        });
     </script>
 </body>
 </html>
