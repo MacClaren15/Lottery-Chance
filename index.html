@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lottery Chances</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        import React, { useState, useEffect } from 'react';
+import { TrendingUp, Calendar, Hash, Percent, Database, Award, Star, RefreshCw, Plus, Check, X, Upload, FileSpreadsheet } from 'lucide-react';
+
+export default function LotteryChances() {
+  const [historicalData, setHistoricalData] = useState([]);
+  const [filteredData, setFilteredData] = useState([]);
+  const [numberStats, setNumberStats] = useState([]);
+  const [additionalStats, setAdditionalStats] = useState([]);
+  const [topMainNumbers, setTopMainNumbers] = useState([]);
+  const [topAdditional, setTopAdditional] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [showFilterForm, setShowFilterForm] = useState(false);
+  const [showImportForm, setShowImportForm] = useState(false);
+  const [importFile, setImportFile] = useState(null);
+  const [importStatus, setImportStatus] = useState('');
+  const [filterSettings, setFilterSettings] = useState({
+    fromDraw: '',
+    toDraw: '',
+    months: '36'
+  });
+  const [newDraw, setNewDraw] = useState({
+    drawNumber: '',
+    date: '',
+    numbers: ['', '', '', '', '', ''],
+    additional: ''
+  });
+
+  function formatDateForDisplay(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
+  async function handleFileImport(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    setImportFile(file);
+    setImportStatus('Reading file...');
+
+    try {
+      const text = await file.text();
+      const rows = text.split('\n').map(row => row.trim()).filter(row => row);
+      
+      // Skip header row
+      const dataRows = rows.slice(1);
+      const importedDraws = [];
+      let errorCount = 0;
+
+      for (const row of dataRows) {
+        try {
+          // Split by comma, handling potential quotes
+          const cols = row.split(',').map(col => col.trim().replace(/^["']|["']$/g, ''));
+          
+          if (cols.length < 8) {
+            errorCount++;
+            continue;
+          }
+
+          const drawNumber = cols[0];
+          const date = cols[1]; // Expected format: YYYY-MM-DD
+          const numbers = [
+            parseInt(cols[2]),
+            parseInt(cols[3]),
+            parseInt(cols[4]),
+            parseInt(cols[5]),
+            parseInt(cols[6]),
+            parseInt(cols[7])
+          ].sort((a, b) => a - b);
+          const additional = parseInt(cols[8]);
+
+          // Validate
+          if (!drawNumber || !date || numbers.some(n => isNaN(n) || n < 1 || n > 49) || isNaN(additional) || additional < 1 || additional > 49) {
+            errorCount++;
+            continue;
+          }
+
+          if (new Set(numbers).size !== 6) {
+            errorCount++;
+            continue;
+          }
+
+          importedDraws.push({
+            drawNumber,
+            date,
+            numbers,
+            additional
+          });
+        } catch (e) {
+          errorCount++;
+        }
+      }
+
+      if (importedDraws.length === 0) {
+        setImportStatus('Error: No valid data found in file');
+        return;
+      }
+
+      // Merge with existing data, avoiding duplicates
+      const existingDrawNumbers = new Set(historicalData.map(d => d.drawNumber));
+      const newDraws = importedDraws.filter(d => !existingDrawNumbers.has(d.drawNumber));
+      
+      // Combine and sort by date (most recent first)
+      const combinedDraws = [...newDraws, ...historicalData].sort((a, b) => {
+        return new Date(b.date) - new Date(a.date);
+      });
+
+      // Keep only last 3 years (312 draws)
+      const trimmedDraws = combinedDraws.slice(0, 312);
+
+      await saveData(trimmedDraws);
+      setHistoricalData(trimmedDraws);
+      
+      setImportStatus(`Success! Imported ${newDraws.length} new draws. ${errorCount > 0 ? `Skipped ${errorCount} invalid rows.` : ''}`);
+      
+      setTimeout(() => {
+        setShowImportForm(false);
+        setImportStatus('');
+        setImportFile(null);
+      }, 3000);
+
+    } catch (error) {
+      setImportStatus(`Error: ${error.message}`);
+    }
+  }
+
+  function downloadTemplate() {
+    const template = `DrawNumber,Date,Number1,Number2,Number3,Number4,Number5,Number6,Additional
+4128,2025-11-07,5,12,18,25,33,41,22
+4127,2025-11-03,10,19,22,34,39,43,35
+4126,2025-10-30,1,5,31,34,38,45,15`;
+
+    const blob = new Blob([template], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'toto-import-template.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function exportData() {
+    let csv = 'DrawNumber,Date,Number1,Number2,Number3,Number4,Number5,Number6,Additional\n';
+    
+    historicalData.forEach(draw => {
+      csv += `${draw.drawNumber},${draw.date},${draw.numbers.join(',')},${draw.additional}\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `toto-data-export-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  useEffect(() => {
+    if (historicalData.length > 0) {
+      applyFilters();
+    }
+  }, [historicalData, filterSettings]);
+
+  useEffect(() => {
+    if (filteredData.length > 0) {
+      calculateAllProbabilities();
+    }
+  }, [filteredData]);
+
+  async function loadData() {
+    setIsLoading(true);
+    try {
+      // Try to load from storage first
+      const stored = await window.storage.get('lottery-historical-data');
+      if (stored && stored.value) {
+        const data = JSON.parse(stored.value);
+        setHistoricalData(data.draws);
+        setLastUpdated(data.lastUpdated);
+      } else {
+        // Initialize with default data
+        await initializeDefaultData();
+      }
+    } catch (error) {
+      console.error('Error loading data:', error);
+      await initializeDefaultData();
+    }
+    setIsLoading(false);
+  }
+
+  async function initializeDefaultData() {
+    const defaultDraws = [
+      { drawNumber: '4127', date: '2025-11-03', numbers: [10, 19, 22, 34, 39, 43], additional: 35 },
+      { drawNumber: '4126', date: '2025-10-30', numbers: [1, 5, 31, 34, 38, 45], additional: 15 },
+      { drawNumber: '4125', date: '2025-10-27', numbers: [9, 17, 22, 24, 31, 38], additional: 47 },
+      { drawNumber: '4124', date: '2025-10-23', numbers: [3, 10, 14, 29, 31, 46], additional: 12 },
+      { drawNumber: '4123', date: '2025-10-20', numbers: [3, 10, 13, 15, 32, 37], additional: 8 },
+      { drawNumber: '4122', date: '2025-10-16', numbers: [2, 13, 19, 35, 41, 46], additional: 30 },
+      { drawNumber: '4121', date: '2025-10-13', numbers: [2, 5, 19, 28, 34, 46], additional: 31 },
+      { drawNumber: '4120', date: '2025-10-09', numbers: [4, 5, 13, 29, 31, 42], additional: 34 },
+      { drawNumber: '4119', date: '2025-10-06', numbers: [5, 12, 15, 21, 24, 38], additional: 49 },
+      { drawNumber: '4118', date: '2025-10-02', numbers: [7, 16, 29, 31, 32, 42], additional: 18 },
+      { drawNumber: '4117', date: '2025-09-29', numbers: [8, 14, 16, 29, 43, 45], additional: 35 },
+      { drawNumber: '4116', date: '2025-09-25', numbers: [6, 12, 27, 35, 43, 46], additional: 9 },
+      { drawNumber: '4115', date: '2025-09-22', numbers: [10, 15, 22, 34, 36, 45], additional: 11 },
+      { drawNumber: '4114', date: '2025-09-18', numbers: [2, 11, 28, 35, 36, 41], additional: 44 },
+      { drawNumber: '4113', date: '2025-09-15', numbers: [2, 3, 24, 25, 34, 48], additional: 19 },
+      { drawNumber: '4112', date: '2025-09-11', numbers: [3, 18, 19, 24, 31, 46], additional: 25 },
+      { drawNumber: '4111', date: '2025-09-08', numbers: [3, 4, 15, 35, 38, 42], additional: 27 },
+      { drawNumber: '4110', date: '2025-09-04', numbers: [4, 8, 12, 34, 37, 43], additional: 29 },
+      { drawNumber: '4109', date: '2025-09-01', numbers: [3, 4, 8, 13, 14, 17], additional: 20 },
+      { drawNumber: '4108', date: '2025-08-28', numbers: [10, 11, 16, 24, 34, 35], additional: 1 },
+      { drawNumber: '4107', date: '2025-08-25', numbers: [2, 3, 4, 16, 22, 39], additional: 48 },
+      { drawNumber: '4106', date: '2025-08-21', numbers: [4, 13, 22, 36, 38, 46], additional: 12 },
+      { drawNumber: '4105', date: '2025-08-18', numbers: [1, 4, 18, 24, 37, 42], additional: 26 },
+      { drawNumber: '4104', date: '2025-08-14', numbers: [22, 25, 29, 31, 34, 43], additional: 11 },
+      { drawNumber: '4103', date: '2025-08-11', numbers: [9, 24, 31, 34, 43, 44], additional: 1 },
+      { drawNumber: '4102', date: '2025-08-08', numbers: [2, 15, 28, 39, 42, 44], additional: 5 },
+      { drawNumber: '4101', date: '2025-08-04', numbers: [30, 32, 40, 43, 45, 49], additional: 5 },
+      { drawNumber: '4100', date: '2025-07-31', numbers: [7, 19, 20, 21, 22, 29], additional: 37 },
+      { drawNumber: '4099', date: '2025-07-28', numbers: [2, 14, 16, 21, 36, 47], additional: 1 },
+      { drawNumber: '4098', date: '2025-07-24', numbers: [9, 11, 24, 32, 39, 49], additional: 26 },
+      { drawNumber: '4097', date: '2025-07-21', numbers: [2, 5, 10, 12, 14, 37], additional: 17 },
+      { drawNumber: '4096', date: '2025-07-17', numbers: [7, 8, 17, 29, 32, 42], additional: 1 },
+      { drawNumber: '4095', date: '2025-07-14', numbers: [2, 8, 19, 29, 38, 41], additional: 20 },
+      { drawNumber: '4094', date: '2025-07-10', numbers: [12, 21, 26, 27, 35, 44], additional: 10 },
+      { drawNumber: '4093', date: '2025-07-07', numbers: [10, 15, 17, 33, 36, 45], additional: 34 },
+      { drawNumber: '4092', date: '2025-07-03', numbers: [6, 15, 16, 17, 25, 34], additional: 31 },
+      { drawNumber: '4091', date: '2025-06-30', numbers: [11, 27, 31, 33, 34, 36], additional: 13 },
+      { drawNumber: '4090', date: '2025-06-26', numbers: [10, 26, 28, 35, 37, 46], additional: 20 },
+      { drawNumber: '4089', date: '2025-06-23', numbers: [2, 15, 29, 37, 45, 49], additional: 24 },
+      { drawNumber: '4088', date: '2025-06-19', numbers: [1, 10, 37, 40, 45, 47], additional: 19 },
+      { drawNumber: '4087', date: '2025-06-16', numbers: [5, 18, 27, 32, 48, 49], additional: 21 },
+      { drawNumber: '4086', date: '2025-06-12', numbers: [3, 7, 38, 41, 44, 49], additional: 20 },
+      { drawNumber: '4085', date: '2025-06-09', numbers: [7, 10, 11, 21, 32, 48], additional: 27 },
+      { drawNumber: '4084', date: '2025-06-05', numbers: [2, 5, 25, 26, 29, 30], additional: 42 },
+      { drawNumber: '4083', date: '2025-06-02', numbers: [10, 19, 21, 22, 28, 31], additional: 34 },
+      { drawNumber: '4082', date: '2025-05-29', numbers: [1, 5, 7, 11, 19, 47], additional: 44 },
+      { drawNumber: '4081', date: '2025-05-26', numbers: [5, 9, 15, 28, 46, 48], additional: 8 },
+      { drawNumber: '4080', date: '2025-05-22', numbers: [3, 10, 32, 34, 44, 48], additional: 29 },
+      { drawNumber: '4079', date: '2025-05-19', numbers: [2, 15, 17, 18, 39, 45], additional: 26 },
+      { drawNumber: '4078', date: '2025-05-15', numbers: [9, 16, 17, 20, 34, 38], additional: 18 },
+      { drawNumber: '4077', date: '2025-05-12', numbers: [6, 16, 20, 23, 40, 48], additional: 45 },
+      { drawNumber: '4076', date: '2025-05-08', numbers: [9, 13, 17, 39, 46, 47], additional: 22 },
+      { drawNumber: '4075', date: '2025-05-05', numbers: [5, 8, 28, 38, 40, 43], additional: 39 },
+      { drawNumber: '4074', date: '2025-05-01', numbers: [2, 8, 12, 30, 35, 49], additional: 38 },
+      { drawNumber: '4073', date: '2025-04-28', numbers: [3, 8, 12, 18, 24, 41], additional: 11 },
+      { drawNumber: '4072', date: '2025-04-24', numbers: [17, 19, 21, 23, 30, 40], additional: 33 },
+      { drawNumber: '4071', date: '2025-04-21', numbers: [1, 17, 30, 37, 41, 43], additional: 32 },
+      { drawNumber: '4070', date: '2025-04-17', numbers: [15, 17, 26, 31, 40, 46], additional: 19 },
+      { drawNumber: '4069', date: '2025-04-14', numbers: [6, 14, 29, 30, 35, 42], additional: 25 },
+      { drawNumber: '4068', date: '2025-04-10', numbers: [14, 26, 27, 30, 46, 48], additional: 10 },
+      { drawNumber: '4067', date: '2025-04-07', numbers: [7, 19, 35, 40, 43, 47], additional: 33 },
+      { drawNumber: '4066', date: '2025-04-03', numbers: [12, 14, 15, 16, 21, 40], additional: 23 },
+      { drawNumber: '4065', date: '2025-03-31', numbers: [9, 12, 17, 23, 29, 46], additional: 20 },
+      { drawNumber: '4064', date: '2025-03-27', numbers: [21, 22, 27, 35, 40, 42], additional: 3 },
+      { drawNumber: '4063', date: '2025-03-24', numbers: [18, 19, 25, 28, 31, 44], additional: 34 },
+      { drawNumber: '4062', date: '2025-03-20', numbers: [9, 10, 11, 13, 23, 42], additional: 20 },
+      { drawNumber: '4061', date: '2025-03-17', numbers: [7, 30, 39, 42, 43, 48], additional: 33 },
+      { drawNumber: '4060', date: '2025-03-13', numbers: [16, 26, 34, 36, 42, 49], additional: 41 },
+      { drawNumber: '4059', date: '2025-03-10', numbers: [1, 8, 20, 28, 35, 43], additional: 14 },
+      { drawNumber: '4058', date: '2025-03-06', numbers: [11, 15, 21, 27, 33, 49], additional: 46 },
+      { drawNumber: '4057', date: '2025-03-03', numbers: [4, 6, 19, 32, 37, 41], additional: 28 },
+      { drawNumber: '4056', date: '2025-02-27', numbers: [5, 13, 22, 29, 36, 44], additional: 17 },
+      { drawNumber: '4055', date: '2025-02-24', numbers: [3, 7, 14, 23, 38, 45], additional: 31 },
+      { drawNumber: '4054', date: '2025-02-20', numbers: [2, 9, 18, 25, 33, 47], additional: 16 },
+      { drawNumber: '4053', date: '2025-02-17', numbers: [6, 10, 24, 31, 39, 48], additional: 12 },
+      { drawNumber: '4052', date: '2025-02-13', numbers: [1, 11, 16, 26, 40, 46], additional: 35 },
+      { drawNumber: '4051', date: '2025-02-10', numbers: [8, 12, 20, 27, 34, 42], additional: 5 },
+      { drawNumber: '4050', date: '2025-02-06', numbers: [4, 15, 19, 28, 37, 49], additional: 22 },
+      { drawNumber: '4049', date: '2025-02-03', numbers: [3, 13, 17, 30, 41, 45], additional: 9 },
+      { drawNumber: '4048', date: '2025-01-30', numbers: [2, 5, 21, 32, 38, 44], additional: 18 },
+      { drawNumber: '4047', date: '2025-01-27', numbers: [7, 9, 14, 25, 36, 43], additional: 29 },
+      { drawNumber: '4046', date: '2025-01-23', numbers: [1, 6, 18, 23, 35, 47], additional: 40 },
+      { drawNumber: '4045', date: '2025-01-20', numbers: [10, 11, 15, 24, 33, 46], additional: 8 },
+      { drawNumber: '4044', date: '2025-01-16', numbers: [4, 8, 16, 29, 39, 48], additional: 13 },
+      { drawNumber: '4043', date: '2025-01-13', numbers: [3, 12, 19, 26, 37, 42], additional: 21 },
+      { drawNumber: '4042', date: '2025-01-09', numbers: [5, 7, 20, 31, 40, 49], additional: 14 },
+      { drawNumber: '4041', date: '2025-01-06', numbers: [2, 9, 17, 27, 34, 45], additional: 36 },
+      { drawNumber: '4040', date: '2025-01-02', numbers: [6, 13, 22, 28, 38, 44], additional: 11 },
+      { drawNumber: '4039', date: '2024-12-30', numbers: [1, 10, 18, 25, 32, 43], additional: 47 },
+      { drawNumber: '4038', date: '2024-12-26', numbers: [4, 11, 15, 23, 35, 46], additional: 19 },
+      { drawNumber: '4037', date: '2024-12-23', numbers: [3, 8, 14, 21, 33, 41], additional: 28 },
+      { drawNumber: '4036', date: '2024-12-19', numbers: [7, 12, 19, 29, 37, 48], additional: 5 },
+      { drawNumber: '4035', date: '2024-12-16', numbers: [2, 5, 16, 24, 36, 42], additional: 30 },
+      { drawNumber: '4034', date: '2024-12-12', numbers: [9, 13, 20, 26, 39, 45], additional: 17 },
+      { drawNumber: '4033', date: '2024-12-09', numbers: [1, 6, 17, 27, 34, 49], additional: 22 },
+      { drawNumber: '4032', date: '2024-12-05', numbers: [4, 10, 18, 31, 40, 44], additional: 15 },
+      { drawNumber: '4031', date: '2024-12-02', numbers: [3, 11, 21, 28, 38, 47], additional: 8 },
+      { drawNumber: '4030', date: '2024-11-28', numbers: [5, 8, 15, 25, 35, 43], additional: 12 },
+      { drawNumber: '4029', date: '2024-11-25', numbers: [2, 7, 19, 23, 32, 46], additional: 41 },
+      { drawNumber: '4028', date: '2024-11-21', numbers: [6, 9, 14, 22, 36, 48], additional: 29 }
+    ];
+
+    await saveData(defaultDraws);
+    setHistoricalData(defaultDraws);
+    setLastUpdated(new Date().toISOString());
+  }
+
+  async function saveData(draws) {
+    try {
+      const dataToSave = {
+        draws: draws,
+        lastUpdated: new Date().toISOString()
+      };
+      await window.storage.set('lottery-historical-data', JSON.stringify(dataToSave));
+      setLastUpdated(dataToSave.lastUpdated);
+    } catch (error) {
+      console.error('Error saving data:', error);
+    }
+  }
+
+  async function addNewDraw() {
+    // Validate input
+    const numbers = newDraw.numbers.map(n => parseInt(n)).filter(n => n >= 1 && n <= 49);
+    const additional = parseInt(newDraw.additional);
+
+    if (numbers.length !== 6 || !additional || additional < 1 || additional > 49) {
+      alert('Please enter 6 valid numbers (1-49) and 1 additional number');
+      return;
+    }
+
+    if (new Set(numbers).size !== 6) {
+      alert('All 6 numbers must be unique');
+      return;
+    }
+
+    if (!newDraw.drawNumber || !newDraw.date) {
+      alert('Please enter draw number and date');
+      return;
+    }
+
+    const draw = {
+      drawNumber: newDraw.drawNumber,
+      date: newDraw.date,
+      numbers: numbers.sort((a, b) => a - b),
+      additional: additional
+    };
+
+    // Add to beginning of array (most recent first)
+    const updatedDraws = [draw, ...historicalData];
+    
+    // Keep only last 3 years (approximately 312 draws - 2 draws per week for 156 weeks)
+    const trimmedDraws = updatedDraws.slice(0, 312);
+
+    await saveData(trimmedDraws);
+    setHistoricalData(trimmedDraws);
+    
+    // Reset form
+    setNewDraw({
+      drawNumber: '',
+      date: '',
+      numbers: ['', '', '', '', '', ''],
+      additional: ''
+    });
+    setShowAddForm(false);
+  }
+
+  function applyFilters() {
+    let filtered = [...historicalData];
+
+    // Filter by date range if specified
+    if (filterSettings.fromDraw && filterSettings.toDraw) {
+      const fromDate = new Date(filterSettings.fromDraw);
+      const toDate = new Date(filterSettings.toDraw);
+      
+      filtered = filtered.filter(draw => {
+        const drawDate = new Date(draw.date);
+        return drawDate >= fromDate && drawDate <= toDate;
+      });
+    } 
+    // Otherwise filter by months
+    else if (filterSettings.months) {
+      const months = parseInt(filterSettings.months);
+      const drawsToKeep = Math.floor((months / 12) * 104);
+      filtered = filtered.slice(0, drawsToKeep);
+    }
+
+    setFilteredData(filtered);
+  }
+
+  function resetFilters() {
+    setFilterSettings({
+      fromDraw: '',
+      toDraw: '',
+      months: '36'
+    });
+  }
+
+  function calculateAllProbabilities() {
+    const totalDraws = filteredData.length;
+    const mainNumberCounts = {};
+    const additionalNumberCounts = {};
+    
+    for (let i = 1; i <= 49; i++) {
+      mainNumberCounts[i] = 0;
+      additionalNumberCounts[i] = 0;
+    }
+    
+    filteredData.forEach(draw => {
+      draw.numbers.forEach(num => {
+        mainNumberCounts[num]++;
+      });
+      additionalNumberCounts[draw.additional]++;
+    });
+    
+    const mainStats = [];
+    for (let i = 1; i <= 49; i++) {
+      const count = mainNumberCounts[i];
+      const probability = ((count / totalDraws) + 0.01) * 100;
+      mainStats.push({
+        number: i,
+        count: count,
+        probability: Math.min(99.99, Math.max(0.01, probability))
+      });
+    }
+    
+    const addStats = [];
+    for (let i = 1; i <= 49; i++) {
+      const count = additionalNumberCounts[i];
+      const probability = ((count / totalDraws) + 0.01) * 100;
+      addStats.push({
+        number: i,
+        count: count,
+        probability: Math.min(99.99, Math.max(0.01, probability))
+      });
+    }
+    
+    mainStats.sort((a, b) => b.probability - a.probability);
+    addStats.sort((a, b) => b.probability - a.probability);
+    
+    setNumberStats(mainStats);
+    setAdditionalStats(addStats);
+    setTopMainNumbers(mainStats.slice(0, 6));
+    setTopAdditional(addStats[0]);
+  }
+
+  function handleNumberInput(index, value) {
+    const newNumbers = [...newDraw.numbers];
+    newNumbers[index] = value;
+    setNewDraw({ ...newDraw, numbers: newNumbers });
+  }
+
+  const totalDraws = filteredData.length;
+  const totalStoredDraws = historicalData.length;
+  const dateRange = filteredData.length > 0 
+    ? `${new Date(filteredData[filteredData.length - 1].date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })} - ${new Date(filteredData[0].date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}`
+    : 'Loading...';
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+      <div className="max-w-7xl mx-auto p-6">
+        <div className="text-center mb-8">
+          <h1 className="text-5xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-3">
+            Lottery Chances
+          </h1>
+          <p className="text-gray-600 text-lg">Historical Data Analysis & Probability Prediction</p>
+          {lastUpdated && (
+            <p className="text-sm text-gray-500 mt-2">
+              Last updated: {new Date(lastUpdated).toLocaleString()}
+            </p>
+          )}
+        </div>
+
+        {/* Action Buttons */}
+        <div className="mb-6 flex justify-center gap-4 flex-wrap">
+          <button
+            onClick={() => setShowAddForm(!showAddForm)}
+            className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold px-6 py-3 rounded-xl shadow-md transition-all flex items-center gap-2"
+          >
+            <Plus size={20} />
+            Add Single Draw
+          </button>
+          
+          <button
+            onClick={() => setShowImportForm(!showImportForm)}
+            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold px-6 py-3 rounded-xl shadow-md transition-all flex items-center gap-2"
+          >
+            <Upload size={20} />
+            Import CSV/Excel
+          </button>
+          
+          <button
+            onClick={() => setShowFilterForm(!showFilterForm)}
+            className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-semibold px-6 py-3 rounded-xl shadow-md transition-all flex items-center gap-2"
+          >
+            <Calendar size={20} />
+            Filter Data Range
+          </button>
+          
+          <button
+            onClick={exportData}
+            className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-semibold px-6 py-3 rounded-xl shadow-md transition-all flex items-center gap-2"
+          >
+            <FileSpreadsheet size={20} />
+            Export Data
+          </button>
+        </div>
+
+        {/* Import CSV/Excel Form */}
+        {showImportForm && (
+          <div className="bg-white rounded-2xl shadow-lg p-8 mb-8 border border-gray-100">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-800">Import CSV/Excel File</h2>
+              <button
+                onClick={() => {
+                  setShowImportForm(false);
+                  setImportStatus('');
+                  setImportFile(null);
+                }}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <h3 className="font-semibold text-blue-900 mb-2">CSV/Excel Format Required:</h3>
+                <code className="text-sm text-blue-800 block mb-2">
+                  DrawNumber,Date,Number1,Number2,Number3,Number4,Number5,Number6,Additional
+                </code>
+                <p className="text-sm text-blue-700 mb-3">
+                  Date format: YYYY-MM-DD (e.g., 2025-11-03)
+                </p>
+                <button
+                  onClick={downloadTemplate}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2 transition-all"
+                >
+                  <FileSpreadsheet size={16} />
+                  Download Template
+                </button>
+              </div>
+
+              <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-purple-400 transition-colors">
+                <input
+                  type="file"
+                  accept=".csv,.xlsx,.xls"
+                  onChange={handleFileImport}
+                  className="hidden"
+                  id="file-upload"
+                />
+                <label
+                  htmlFor="file-upload"
+                  className="cursor-pointer flex flex-col items-center"
+                >
+                  <Upload size={48} className="text-gray-400 mb-3" />
+                  <p className="text-lg font-semibold text-gray-700 mb-2">
+                    Click to upload CSV or Excel file
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Supports .csv, .xlsx, .xls files
+                  </p>
+                </label>
+              </div>
+
+              {importFile && (
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <p className="text-sm text-gray-700">
+                    <strong>Selected file:</strong> {importFile.name}
+                  </p>
+                </div>
+              )}
+
+              {importStatus && (
+                <div className={`rounded-xl p-4 ${
+                  importStatus.startsWith('Success') 
+                    ? 'bg-green-50 text-green-800 border border-green-200' 
+                    : importStatus.startsWith('Error')
+                    ? 'bg-red-50 text-red-800 border border-red-200'
+                    : 'bg-blue-50 text-blue-800 border border-blue-200'
+                }`}>
+                  <p className="font-semibold">{importStatus}</p>
+                </div>
+              )}
+
+              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                <h3 className="font-semibold text-yellow-900 mb-2">📝 Notes:</h3>
+                <ul className="text-sm text-yellow-800 space-y-1">
+                  <li>• Duplicate draw numbers will be skipped</li>
+                  <li>• Maximum 3 years (312 draws) will be kept</li>
+                  <li>• All 6 numbers must be unique and between 1-49</li>
+                  <li>• Invalid rows will be skipped automatically</li>
+                  <li>• Data is sorted by date (most recent first)</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Add New Draw Form */}
+        {showAddForm && (
+          <div className="bg-white rounded-2xl shadow-lg p-8 mb-8 border border-gray-100">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-800">Add New Draw Result</h2>
+              <button
+                onClick={() => setShowAddForm(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Draw Number
+                  </label>
+                  <input
+                    type="text"
+                    value={newDraw.drawNumber}
+                    onChange={(e) => setNewDraw({ ...newDraw, drawNumber: e.target.value })}
+                    placeholder="e.g., 4128"
+                    className="w-full h-12 px-4 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Date (YYYY-MM-DD)
+                  </label>
+                  <input
+                    type="date"
+                    value={newDraw.date}
+                    onChange={(e) => setNewDraw({ ...newDraw, date: e.target.value })}
+                    className="w-full h-12 px-4 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  6 Main Numbers (1-49)
+                </label>
+                <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+                  {newDraw.numbers.map((num, index) => (
+                    <input
+                      key={index}
+                      type="number"
+                      min="1"
+                      max="49"
+                      value={num}
+                      onChange={(e) => handleNumberInput(index, e.target.value)}
+                      placeholder={`#${index + 1}`}
+                      className="w-full h-14 text-center text-xl font-bold border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Additional Number (1-49)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="49"
+                  value={newDraw.additional}
+                  onChange={(e) => setNewDraw({ ...newDraw, additional: e.target.value })}
+                  placeholder="Additional"
+                  className="w-full md:w-48 h-14 text-center text-xl font-bold border-2 border-orange-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+
+              <button
+                onClick={addNewDraw}
+                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold py-4 rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
+              >
+                <Check size={20} />
+                Add Draw & Recalculate
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Filter Form */}
+        {showFilterForm && (
+          <div className="bg-white rounded-2xl shadow-lg p-8 mb-8 border border-gray-100">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-800">Filter Data Range</h2>
+              <button
+                onClick={() => setShowFilterForm(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  Option 1: Filter by Time Period (Months)
+                </label>
+                <div className="flex items-center gap-4">
+                  <input
+                    type="range"
+                    min="1"
+                    max="36"
+                    value={filterSettings.months}
+                    onChange={(e) => setFilterSettings({ ...filterSettings, months: e.target.value, fromDraw: '', toDraw: '' })}
+                    className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                  />
+                  <span className="text-2xl font-bold text-indigo-600 min-w-24 text-center">
+                    {filterSettings.months} months
+                  </span>
+                </div>
+                <p className="text-sm text-gray-500 mt-2">
+                  Use last {filterSettings.months} months of data (~{Math.floor((parseInt(filterSettings.months) / 12) * 104)} draws)
+                </p>
+              </div>
+
+              <div className="border-t border-gray-200 pt-6">
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  Option 2: Filter by Date Range
+                </label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-2">From Date</label>
+                    <input
+                      type="date"
+                      value={filterSettings.fromDraw}
+                      onChange={(e) => setFilterSettings({ ...filterSettings, fromDraw: e.target.value, months: '' })}
+                      className="w-full h-12 px-4 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-2">To Date</label>
+                    <input
+                      type="date"
+                      value={filterSettings.toDraw}
+                      onChange={(e) => setFilterSettings({ ...filterSettings, toDraw: e.target.value, months: '' })}
+                      className="w-full h-12 px-4 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+                <p className="text-sm text-gray-500 mt-2">
+                  Available range: {historicalData.length > 0 ? `${new Date(historicalData[historicalData.length - 1].date).toLocaleDateString('en-GB')} - ${new Date(historicalData[0].date).toLocaleDateString('en-GB')}` : 'N/A'}
+                </p>
+              </div>
+
+              <div className="flex gap-4">
+                <button
+                  onClick={() => {
+                    applyFilters();
+                    setShowFilterForm(false);
+                  }}
+                  className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-semibold py-4 rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
+                >
+                  <Check size={20} />
+                  Apply Filters
+                </button>
+                <button
+                  onClick={() => {
+                    resetFilters();
+                    setShowFilterForm(false);
+                  }}
+                  className="px-8 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-4 rounded-xl transition-all"
+                >
+                  Reset
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+          <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
+            <div className="flex items-center gap-3">
+              <div className="bg-purple-100 p-3 rounded-lg">
+                <Calendar className="text-purple-600" size={24} />
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Storage Period</p>
+                <p className="text-sm font-semibold text-gray-800">3 Years ({totalStoredDraws} draws)</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
+            <div className="flex items-center gap-3">
+              <div className="bg-pink-100 p-3 rounded-lg">
+                <Hash className="text-pink-600" size={24} />
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Active Data Range ({totalDraws} draws)</p>
+                <p className="text-xs font-semibold text-gray-800">{dateRange}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl shadow-2xl p-8 mb-8 text-white">
+          <div className="flex items-center gap-3 mb-6">
+            <Award className="text-yellow-300" size={32} />
+            <h2 className="text-3xl font-bold">Recommended Numbers (Highest Probability)</h2>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            <div>
+              <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                <Star className="text-yellow-300" size={20} />
+                Top 6 Main Numbers
+              </h3>
+              <div className="grid grid-cols-3 gap-3">
+                {topMainNumbers.map((stat) => (
+                  <div key={stat.number} className="bg-white bg-opacity-20 backdrop-blur-sm rounded-xl p-4 text-center border border-white border-opacity-30">
+                    <div className="text-4xl font-bold text-yellow-300 mb-2">
+                      {stat.number.toString().padStart(2, '0')}
+                    </div>
+                    <div className="text-sm opacity-90">
+                      {stat.probability.toFixed(2)}%
+                    </div>
+                    <div className="text-xs opacity-75 mt-1">
+                      ({stat.count} times)
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                <Star className="text-orange-300" size={20} />
+                Top Additional Number
+              </h3>
+              {topAdditional && (
+                <div className="bg-white bg-opacity-20 backdrop-blur-sm rounded-xl p-6 text-center border border-white border-opacity-30 max-w-xs">
+                  <div className="text-6xl font-bold text-orange-300 mb-3">
+                    {topAdditional.number.toString().padStart(2, '0')}
+                  </div>
+                  <div className="text-xl font-semibold">
+                    {topAdditional.probability.toFixed(2)}%
+                  </div>
+                  <div className="text-sm opacity-75 mt-2">
+                    Appeared {topAdditional.count} times
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8 border border-gray-100">
+          <div className="flex items-center gap-3 mb-6">
+            <TrendingUp className="text-indigo-600" size={28} />
+            <h2 className="text-2xl font-bold text-gray-800">All Main Numbers Probability (1-49)</h2>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
+            {numberStats.map((stat) => (
+              <div 
+                key={stat.number} 
+                className={`rounded-lg p-3 border-2 ${
+                  topMainNumbers.some(top => top.number === stat.number)
+                    ? 'bg-gradient-to-br from-indigo-50 to-purple-50 border-indigo-400'
+                    : 'bg-gray-50 border-gray-200'
+                }`}
+              >
+                <div className="text-center">
+                  <div className={`text-2xl font-bold mb-1 ${
+                    topMainNumbers.some(top => top.number === stat.number)
+                      ? 'text-indigo-600'
+                      : 'text-gray-700'
+                  }`}>
+                    {stat.number.toString().padStart(2, '0')}
+                  </div>
+                  <div className="text-xs font-semibold text-gray-600">
+                    {stat.probability.toFixed(2)}%
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {stat.count}x
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2">
+                    <div
+                      className={`h-1.5 rounded-full ${
+                        topMainNumbers.some(top => top.number === stat.number)
+                          ? 'bg-gradient-to-r from-indigo-500 to-purple-500'
+                          : 'bg-gray-400'
+                      }`}
+                      style={{ width: `${Math.min(100, stat.probability)}%` }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8 border border-gray-100">
+          <div className="flex items-center gap-3 mb-6">
+            <Percent className="text-orange-600" size={28} />
+            <h2 className="text-2xl font-bold text-gray-800">All Additional Numbers Probability (1-49)</h2>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
+            {additionalStats.map((stat) => (
+              <div 
+                key={stat.number} 
+                className={`rounded-lg p-3 border-2 ${
+                  topAdditional && topAdditional.number === stat.number
+                    ? 'bg-gradient-to-br from-orange-50 to-red-50 border-orange-400'
+                    : 'bg-gray-50 border-gray-200'
+                }`}
+              >
+                <div className="text-center">
+                  <div className={`text-2xl font-bold mb-1 ${
+                    topAdditional && topAdditional.number === stat.number
+                      ? 'text-orange-600'
+                      : 'text-gray-700'
+                  }`}>
+                    {stat.number.toString().padStart(2, '0')}
+                  </div>
+                  <div className="text-xs font-semibold text-gray-600">
+                    {stat.probability.toFixed(2)}%
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {stat.count}x
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2">
+                    <div
+                      className={`h-1.5 rounded-full ${
+                        topAdditional && topAdditional.number === stat.number
+                          ? 'bg-gradient-to-r from-orange-500 to-red-500'
+                          : 'bg-gray-400'
+                      }`}
+                      style={{ width: `${Math.min(100, stat.probability)}%` }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-8 bg-indigo-50 rounded-xl p-6 border border-indigo-200">
+          <h3 className="text-lg font-semibold text-indigo-900 mb-2">Algorithm</h3>
+          <p className="text-indigo-700">
+            Probability = ((Number of occurrences / Total draws) + 0.01) × 100%
+          </p>
+          <p className="text-sm text-indigo-600 mt-2">
+            Maximum 3 years of data stored. Use filters to analyze specific time periods or draw ranges.
+          </p>
+          <p className="text-xs text-indigo-500 mt-1">
+            Currently analyzing {totalDraws} draws from {filteredData.length > 0 ? filteredData[filteredData.length - 1].drawNumber : ''} to {filteredData.length > 0 ? filteredData[0].drawNumber : ''}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+    </script>
+</body>
+</html>
