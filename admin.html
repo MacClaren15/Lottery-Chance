@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔐 TOTO Admin Panel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --gold: #F4B942;
+            --gold-light: #FFD873;
+            --gold-dark: #C9922E;
+            --bg-primary: #0D1117;
+            --bg-secondary: #161B22;
+            --bg-tertiary: #21262D;
+            --text-primary: #F0F6FC;
+            --text-secondary: #8B949E;
+            --accent-blue: #58A6FF;
+            --accent-green: #3FB950;
+            --accent-red: #F85149;
+            --accent-orange: #F0883E;
+            --border: #30363D;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(ellipse at 20% 20%, rgba(248, 81, 73, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(244, 185, 66, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Login Screen */
+        .login-screen {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .login-box {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 3rem;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .login-box h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            color: var(--accent-red);
+        }
+
+        .login-box p {
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+        }
+
+        .login-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Header */
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            position: relative;
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-red), var(--accent-orange), var(--gold));
+        }
+
+        .back-link {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            padding: 0.5rem 1rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+        }
+
+        .back-link:hover {
+            color: var(--gold);
+            border-color: var(--gold);
+        }
+
+        .logout-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            padding: 0.5rem 1rem;
+            background: var(--accent-red);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: #da3633;
+        }
+
+        h1 {
+            font-size: 1.75rem;
+            color: var(--accent-orange);
+            margin-bottom: 0.25rem;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--gold);
+            box-shadow: 0 0 0 3px rgba(244, 185, 66, 0.1);
+        }
+
+        input[type="password"] {
+            font-family: 'Space Mono', monospace;
+            letter-spacing: 2px;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);
+            color: var(--bg-primary);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(244, 185, 66, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--gold);
+            color: var(--gold);
+        }
+
+        .btn-danger {
+            background: var(--accent-red);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #da3633;
+        }
+
+        .btn-success {
+            background: var(--accent-green);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #2ea043;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .card h2 {
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        /* Action Buttons Grid */
+        .actions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .action-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1.25rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: var(--text-primary);
+        }
+
+        .action-btn:hover {
+            border-color: var(--gold);
+            transform: translateY(-3px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+        }
+
+        .action-btn .icon {
+            font-size: 2rem;
+        }
+
+        .action-btn .label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        /* Number Input Grid */
+        .number-input-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 0.5rem;
+            margin: 1rem 0;
+        }
+
+        .number-checkbox {
+            display: none;
+        }
+
+        .number-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            aspect-ratio: 1;
+            background: var(--bg-primary);
+            border: 2px solid var(--border);
+            border-radius: 50%;
+            font-family: 'Space Mono', monospace;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.85rem;
+        }
+
+        .number-label:hover {
+            border-color: var(--gold);
+        }
+
+        .number-checkbox:checked + .number-label {
+            background: var(--gold);
+            border-color: var(--gold);
+            color: var(--bg-primary);
+        }
+
+        .number-checkbox.additional:checked + .number-label {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+            color: white;
+        }
+
+        .selected-count {
+            text-align: center;
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .selected-count.valid {
+            color: var(--accent-green);
+        }
+
+        .selected-count.invalid {
+            color: var(--accent-red);
+        }
+
+        /* Table */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .data-table th {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 500;
+        }
+
+        .data-table tbody tr:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .delete-btn {
+            padding: 0.4rem 0.75rem;
+            background: transparent;
+            border: 1px solid var(--accent-red);
+            border-radius: 6px;
+            color: var(--accent-red);
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s ease;
+        }
+
+        .delete-btn:hover {
+            background: var(--accent-red);
+            color: white;
+        }
+
+        /* Mini balls */
+        .mini-balls {
+            display: flex;
+            gap: 0.3rem;
+            flex-wrap: wrap;
+        }
+
+        .mini-ball {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.7rem;
+            font-weight: 600;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+        }
+
+        .mini-ball.additional {
+            background: var(--accent-blue);
+            color: white;
+            border: none;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-header h2 {
+            font-size: 1.25rem;
+            margin: 0;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.25rem;
+            line-height: 1;
+        }
+
+        .modal-close:hover {
+            color: var(--text-primary);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .modal-actions .btn {
+            flex: 1;
+        }
+
+        /* Toast Notifications */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            padding: 1rem 1.5rem;
+            border-radius: 10px;
+            color: white;
+            font-weight: 500;
+            z-index: 2000;
+            animation: slideIn 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .toast.success {
+            background: var(--accent-green);
+        }
+
+        .toast.error {
+            background: var(--accent-red);
+        }
+
+        .toast.info {
+            background: var(--accent-blue);
+        }
+
+        /* Status Badge */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--bg-tertiary);
+            border-radius: 20px;
+            font-size: 0.85rem;
+            margin-bottom: 1rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-green);
+        }
+
+        .status-dot.disconnected {
+            background: var(--accent-red);
+        }
+
+        /* File Input */
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-input-wrapper input[type="file"] {
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .file-input-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 2rem;
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            color: var(--text-secondary);
+            transition: all 0.3s ease;
+        }
+
+        .file-input-wrapper:hover .file-input-label {
+            border-color: var(--gold);
+            color: var(--gold);
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .number-input-grid {
+                grid-template-columns: repeat(7, 1fr);
+                gap: 0.3rem;
+            }
+
+            .number-label {
+                font-size: 0.75rem;
+            }
+
+            .actions-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* Hidden */
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="login-screen">
+        <div class="login-box">
+            <div class="login-icon">🔐</div>
+            <h1>Admin Access</h1>
+            <p>Enter password to manage lottery data</p>
+            <form id="loginForm">
+                <div class="form-group">
+                    <input type="password" id="passwordInput" placeholder="Enter password" autocomplete="current-password">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    🔓 Login
+                </button>
+            </form>
+            <p style="margin-top: 1.5rem; font-size: 0.85rem; color: var(--text-secondary);">
+                <a href="index.html" style="color: var(--accent-blue); text-decoration: none;">← Back to Public View</a>
+            </p>
+        </div>
+    </div>
+
+    <!-- Admin Panel -->
+    <div id="adminPanel" class="container hidden">
+        <header>
+            <a href="index.html" class="back-link">← Public View</a>
+            <button class="logout-btn" onclick="logout()">🚪 Logout</button>
+            <h1>🔧 Admin Panel</h1>
+            <p class="subtitle">Manage Singapore TOTO Lottery Data</p>
+        </header>
+
+        <div class="status-badge">
+            <span class="status-dot" id="statusDot"></span>
+            <span id="statusText">Checking connection...</span>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="actions-grid">
+            <div class="action-btn" onclick="openModal('addDrawModal')">
+                <span class="icon">➕</span>
+                <span class="label">Add Draw</span>
+            </div>
+            <div class="action-btn" onclick="openModal('importModal')">
+                <span class="icon">📤</span>
+                <span class="label">Import CSV</span>
+            </div>
+            <div class="action-btn" onclick="exportCSV()">
+                <span class="icon">💾</span>
+                <span class="label">Export CSV</span>
+            </div>
+            <div class="action-btn" onclick="downloadTemplate()">
+                <span class="icon">📥</span>
+                <span class="label">CSV Template</span>
+            </div>
+            <div class="action-btn" onclick="refreshData()">
+                <span class="icon">🔄</span>
+                <span class="label">Refresh</span>
+            </div>
+            <div class="action-btn" onclick="openModal('clearModal')" style="border-color: var(--accent-red);">
+                <span class="icon">🗑️</span>
+                <span class="label">Clear All</span>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="card">
+            <h2>📊 Data Overview</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
+                <div>
+                    <div style="color: var(--text-secondary); font-size: 0.85rem;">Total Draws</div>
+                    <div style="font-size: 1.5rem; font-weight: 700; color: var(--gold);" id="adminTotalDraws">0</div>
+                </div>
+                <div>
+                    <div style="color: var(--text-secondary); font-size: 0.85rem;">Data Range</div>
+                    <div style="font-size: 1.5rem; font-weight: 700; color: var(--gold);" id="adminDataRange">-</div>
+                </div>
+                <div>
+                    <div style="color: var(--text-secondary); font-size: 0.85rem;">Last Updated</div>
+                    <div style="font-size: 1.5rem; font-weight: 700; color: var(--gold);" id="adminLastUpdated">-</div>
+                </div>
+                <div>
+                    <div style="color: var(--text-secondary); font-size: 0.85rem;">Bin ID</div>
+                    <div style="font-size: 0.85rem; font-weight: 500; color: var(--accent-blue); word-break: break-all;" id="adminBinId">-</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Draws Table -->
+        <div class="card">
+            <h2>🎱 All Draws</h2>
+            <div style="overflow-x: auto;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Draw #</th>
+                            <th>Date</th>
+                            <th>Main Numbers</th>
+                            <th>Additional</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="drawsTableBody">
+                        <tr>
+                            <td colspan="5" style="text-align: center; color: var(--text-secondary);">No draws yet</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Draw Modal -->
+    <div id="addDrawModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>➕ Add New Draw</h2>
+                <button class="modal-close" onclick="closeModal('addDrawModal')">&times;</button>
+            </div>
+            <form id="addDrawForm">
+                <div class="form-group">
+                    <label>Draw Number</label>
+                    <input type="number" id="drawNumber" required min="1">
+                </div>
+                <div class="form-group">
+                    <label>Date</label>
+                    <input type="date" id="drawDate" required>
+                </div>
+                <div class="form-group">
+                    <label>Main Numbers (Select 6)</label>
+                    <div class="number-input-grid" id="mainNumbersGrid">
+                        <!-- Generated by JS -->
+                    </div>
+                    <div class="selected-count" id="mainSelectedCount">0 / 6 selected</div>
+                </div>
+                <div class="form-group">
+                    <label>Additional Number (Select 1)</label>
+                    <div class="number-input-grid" id="additionalNumberGrid">
+                        <!-- Generated by JS -->
+                    </div>
+                    <div class="selected-count" id="additionalSelectedCount">0 / 1 selected</div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('addDrawModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="addDrawBtn">Add Draw</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Import Modal -->
+    <div id="importModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📤 Import CSV</h2>
+                <button class="modal-close" onclick="closeModal('importModal')">&times;</button>
+            </div>
+            <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.9rem;">
+                Upload a CSV file with lottery draw data. Download the template first to see the required format.
+            </p>
+            <div class="file-input-wrapper">
+                <input type="file" id="csvFileInput" accept=".csv">
+                <div class="file-input-label">
+                    <span>📁</span>
+                    <span>Click or drag CSV file here</span>
+                </div>
+            </div>
+            <div id="importPreview" style="margin-top: 1rem;"></div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('importModal')">Cancel</button>
+                <button type="button" class="btn btn-success" id="confirmImportBtn" onclick="confirmImport()" disabled>Import Data</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Clear Confirmation Modal -->
+    <div id="clearModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>⚠️ Clear All Data</h2>
+                <button class="modal-close" onclick="closeModal('clearModal')">&times;</button>
+            </div>
+            <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+                Are you sure you want to delete all lottery data? This action cannot be undone.
+            </p>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('clearModal')">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="clearAllData()">Yes, Clear All</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const JSONBIN_API_KEY = '$2a$10$R/mm5ZKrBGZrNUbiKNeNDeYN9mngd2TZHfmRauxTxXf/MHqsbfNnW';
+        const ADMIN_PASSWORD = 'toto2024admin'; // Change this to your preferred password
+        
+        let binId = localStorage.getItem('toto_bin_id') || null;
+        let lotteryData = { draws: [], lastUpdated: null };
+        let pendingImportData = [];
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check if already logged in
+            if (sessionStorage.getItem('toto_admin_logged_in') === 'true') {
+                showAdminPanel();
+            }
+
+            // Setup login form
+            document.getElementById('loginForm').addEventListener('submit', handleLogin);
+            
+            // Setup add draw form
+            document.getElementById('addDrawForm').addEventListener('submit', handleAddDraw);
+            
+            // Generate number grids
+            generateNumberGrids();
+            
+            // Setup CSV file input
+            document.getElementById('csvFileInput').addEventListener('change', handleCSVSelect);
+        });
+
+        // Handle login
+        function handleLogin(e) {
+            e.preventDefault();
+            const password = document.getElementById('passwordInput').value;
+            
+            if (password === ADMIN_PASSWORD) {
+                sessionStorage.setItem('toto_admin_logged_in', 'true');
+                showAdminPanel();
+            } else {
+                showToast('Invalid password', 'error');
+                document.getElementById('passwordInput').value = '';
+            }
+        }
+
+        // Show admin panel
+        async function showAdminPanel() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('adminPanel').classList.remove('hidden');
+            await initializeData();
+        }
+
+        // Logout
+        function logout() {
+            sessionStorage.removeItem('toto_admin_logged_in');
+            location.reload();
+        }
+
+        // Initialize data - create bin if needed
+        async function initializeData() {
+            updateStatus('Connecting...', false);
+            
+            if (!binId) {
+                // Try to create a new bin
+                try {
+                    const response = await fetch('https://api.jsonbin.io/v3/b', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Access-Key': JSONBIN_API_KEY,
+                            'X-Bin-Name': 'TOTO_LOTTERY_DATA'
+                        },
+                        body: JSON.stringify({ draws: [], lastUpdated: new Date().toISOString() })
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        binId = result.metadata.id;
+                        localStorage.setItem('toto_bin_id', binId);
+                        showToast('Created new data storage', 'success');
+                    } else {
+                        throw new Error('Failed to create bin');
+                    }
+                } catch (error) {
+                    updateStatus('Connection failed', false);
+                    showToast('Failed to initialize storage', 'error');
+                    return;
+                }
+            }
+
+            await loadData();
+        }
+
+        // Load data from JSONBin
+        async function loadData() {
+            try {
+                const response = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
+                    headers: {
+                        'X-Access-Key': JSONBIN_API_KEY
+                    }
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    lotteryData = result.record || { draws: [], lastUpdated: null };
+                    updateStatus('Connected', true);
+                    renderAdminData();
+                } else {
+                    throw new Error('Failed to load');
+                }
+            } catch (error) {
+                console.error('Load error:', error);
+                updateStatus('Load failed', false);
+                showToast('Failed to load data', 'error');
+            }
+        }
+
+        // Save data to JSONBin
+        async function saveData() {
+            lotteryData.lastUpdated = new Date().toISOString();
+            
+            try {
+                const response = await fetch(`https://api.jsonbin.io/v3/b/${binId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Access-Key': JSONBIN_API_KEY
+                    },
+                    body: JSON.stringify(lotteryData)
+                });
+
+                if (response.ok) {
+                    showToast('Data saved to cloud', 'success');
+                    renderAdminData();
+                    return true;
+                } else {
+                    throw new Error('Save failed');
+                }
+            } catch (error) {
+                console.error('Save error:', error);
+                showToast('Failed to save data', 'error');
+                return false;
+            }
+        }
+
+        // Update status display
+        function updateStatus(text, connected) {
+            document.getElementById('statusText').textContent = text;
+            document.getElementById('statusDot').className = connected ? 'status-dot' : 'status-dot disconnected';
+        }
+
+        // Generate number selection grids
+        function generateNumberGrids() {
+            const mainGrid = document.getElementById('mainNumbersGrid');
+            const additionalGrid = document.getElementById('additionalNumberGrid');
+            
+            for (let i = 1; i <= 49; i++) {
+                mainGrid.innerHTML += `
+                    <input type="checkbox" id="main_${i}" class="number-checkbox" value="${i}" onchange="updateMainCount()">
+                    <label for="main_${i}" class="number-label">${i}</label>
+                `;
+                
+                additionalGrid.innerHTML += `
+                    <input type="checkbox" id="add_${i}" class="number-checkbox additional" value="${i}" onchange="updateAdditionalCount()">
+                    <label for="add_${i}" class="number-label">${i}</label>
+                `;
+            }
+        }
+
+        // Update main numbers count
+        function updateMainCount() {
+            const checked = document.querySelectorAll('#mainNumbersGrid .number-checkbox:checked');
+            const countEl = document.getElementById('mainSelectedCount');
+            countEl.textContent = `${checked.length} / 6 selected`;
+            countEl.className = `selected-count ${checked.length === 6 ? 'valid' : checked.length > 6 ? 'invalid' : ''}`;
+            
+            // Disable others if 6 selected
+            const allCheckboxes = document.querySelectorAll('#mainNumbersGrid .number-checkbox');
+            allCheckboxes.forEach(cb => {
+                if (!cb.checked && checked.length >= 6) {
+                    cb.disabled = true;
+                } else {
+                    cb.disabled = false;
+                }
+            });
+        }
+
+        // Update additional number count
+        function updateAdditionalCount() {
+            const checked = document.querySelectorAll('#additionalNumberGrid .number-checkbox:checked');
+            const countEl = document.getElementById('additionalSelectedCount');
+            countEl.textContent = `${checked.length} / 1 selected`;
+            countEl.className = `selected-count ${checked.length === 1 ? 'valid' : checked.length > 1 ? 'invalid' : ''}`;
+            
+            // Disable others if 1 selected
+            const allCheckboxes = document.querySelectorAll('#additionalNumberGrid .number-checkbox');
+            allCheckboxes.forEach(cb => {
+                if (!cb.checked && checked.length >= 1) {
+                    cb.disabled = true;
+                } else {
+                    cb.disabled = false;
+                }
+            });
+        }
+
+        // Handle add draw form submission
+        async function handleAddDraw(e) {
+            e.preventDefault();
+            
+            const drawNumber = parseInt(document.getElementById('drawNumber').value);
+            const drawDate = document.getElementById('drawDate').value;
+            
+            const mainNumbers = Array.from(document.querySelectorAll('#mainNumbersGrid .number-checkbox:checked'))
+                .map(cb => parseInt(cb.value))
+                .sort((a, b) => a - b);
+            
+            const additionalChecked = document.querySelectorAll('#additionalNumberGrid .number-checkbox:checked');
+            
+            // Validation
+            if (mainNumbers.length !== 6) {
+                showToast('Please select exactly 6 main numbers', 'error');
+                return;
+            }
+            
+            if (additionalChecked.length !== 1) {
+                showToast('Please select exactly 1 additional number', 'error');
+                return;
+            }
+            
+            const additionalNumber = parseInt(additionalChecked[0].value);
+            
+            // Check for duplicate draw number
+            if (lotteryData.draws.some(d => d.drawNumber === drawNumber)) {
+                showToast(`Draw #${drawNumber} already exists`, 'error');
+                return;
+            }
+            
+            // Add draw
+            lotteryData.draws.push({
+                drawNumber,
+                date: drawDate,
+                mainNumbers,
+                additionalNumber
+            });
+            
+            // Sort by draw number
+            lotteryData.draws.sort((a, b) => b.drawNumber - a.drawNumber);
+            
+            const saved = await saveData();
+            if (saved) {
+                closeModal('addDrawModal');
+                resetAddForm();
+            }
+        }
+
+        // Reset add form
+        function resetAddForm() {
+            document.getElementById('addDrawForm').reset();
+            document.querySelectorAll('.number-checkbox').forEach(cb => {
+                cb.checked = false;
+                cb.disabled = false;
+            });
+            document.getElementById('mainSelectedCount').textContent = '0 / 6 selected';
+            document.getElementById('mainSelectedCount').className = 'selected-count';
+            document.getElementById('additionalSelectedCount').textContent = '0 / 1 selected';
+            document.getElementById('additionalSelectedCount').className = 'selected-count';
+        }
+
+        // Delete draw
+        async function deleteDraw(drawNumber) {
+            if (!confirm(`Delete draw #${drawNumber}?`)) return;
+            
+            lotteryData.draws = lotteryData.draws.filter(d => d.drawNumber !== drawNumber);
+            await saveData();
+        }
+
+        // Render admin data
+        function renderAdminData() {
+            const draws = lotteryData.draws || [];
+            
+            // Stats
+            document.getElementById('adminTotalDraws').textContent = draws.length;
+            document.getElementById('adminBinId').textContent = binId || '-';
+            
+            if (draws.length > 0) {
+                const sortedDraws = [...draws].sort((a, b) => a.drawNumber - b.drawNumber);
+                document.getElementById('adminDataRange').textContent = 
+                    `#${sortedDraws[0].drawNumber} - #${sortedDraws[sortedDraws.length - 1].drawNumber}`;
+            } else {
+                document.getElementById('adminDataRange').textContent = '-';
+            }
+            
+            if (lotteryData.lastUpdated) {
+                document.getElementById('adminLastUpdated').textContent = 
+                    new Date(lotteryData.lastUpdated).toLocaleString('en-SG');
+            } else {
+                document.getElementById('adminLastUpdated').textContent = '-';
+            }
+            
+            // Table
+            const tbody = document.getElementById('drawsTableBody');
+            
+            if (draws.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: var(--text-secondary); padding: 2rem;">
+                            No draws yet. Click "Add Draw" to get started.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = draws.map(draw => `
+                <tr>
+                    <td><strong>#${draw.drawNumber}</strong></td>
+                    <td>${new Date(draw.date).toLocaleDateString('en-SG')}</td>
+                    <td>
+                        <div class="mini-balls">
+                            ${draw.mainNumbers.map(n => `<span class="mini-ball">${n}</span>`).join('')}
+                        </div>
+                    </td>
+                    <td><span class="mini-ball additional">${draw.additionalNumber}</span></td>
+                    <td>
+                        <button class="delete-btn" onclick="deleteDraw(${draw.drawNumber})">🗑️ Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Refresh data
+        async function refreshData() {
+            await loadData();
+            showToast('Data refreshed', 'info');
+        }
+
+        // Clear all data
+        async function clearAllData() {
+            lotteryData.draws = [];
+            await saveData();
+            closeModal('clearModal');
+            showToast('All data cleared', 'success');
+        }
+
+        // Export CSV
+        function exportCSV() {
+            if (lotteryData.draws.length === 0) {
+                showToast('No data to export', 'error');
+                return;
+            }
+            
+            let csv = 'DrawNumber,Date,Num1,Num2,Num3,Num4,Num5,Num6,Additional\n';
+            
+            lotteryData.draws.forEach(draw => {
+                csv += `${draw.drawNumber},${draw.date},${draw.mainNumbers.join(',')},${draw.additionalNumber}\n`;
+            });
+            
+            downloadFile(csv, `toto_data_${new Date().toISOString().split('T')[0]}.csv`, 'text/csv');
+            showToast('CSV exported', 'success');
+        }
+
+        // Download template
+        function downloadTemplate() {
+            const template = `DrawNumber,Date,Num1,Num2,Num3,Num4,Num5,Num6,Additional
+3961,2024-01-01,1,12,23,34,45,49,7
+3962,2024-01-04,5,15,25,35,40,42,18`;
+            
+            downloadFile(template, 'toto_template.csv', 'text/csv');
+            showToast('Template downloaded', 'success');
+        }
+
+        // Download file helper
+        function downloadFile(content, filename, type) {
+            const blob = new Blob([content], { type });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Handle CSV file selection
+        function handleCSVSelect(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                parseCSV(event.target.result);
+            };
+            reader.readAsText(file);
+        }
+
+        // Parse CSV
+        function parseCSV(content) {
+            const lines = content.trim().split('\n');
+            const preview = document.getElementById('importPreview');
+            pendingImportData = [];
+            
+            // Skip header
+            for (let i = 1; i < lines.length; i++) {
+                const parts = lines[i].split(',').map(p => p.trim());
+                
+                if (parts.length >= 9) {
+                    const drawNumber = parseInt(parts[0]);
+                    const date = parts[1];
+                    const mainNumbers = parts.slice(2, 8).map(n => parseInt(n)).sort((a, b) => a - b);
+                    const additionalNumber = parseInt(parts[8]);
+                    
+                    // Validate
+                    if (!isNaN(drawNumber) && date && mainNumbers.length === 6 && !isNaN(additionalNumber)) {
+                        // Check for duplicates with existing data
+                        if (!lotteryData.draws.some(d => d.drawNumber === drawNumber)) {
+                            pendingImportData.push({ drawNumber, date, mainNumbers, additionalNumber });
+                        }
+                    }
+                }
+            }
+            
+            if (pendingImportData.length > 0) {
+                preview.innerHTML = `
+                    <div style="background: var(--bg-tertiary); padding: 1rem; border-radius: 8px; margin-top: 1rem;">
+                        <strong style="color: var(--accent-green);">✓ ${pendingImportData.length} new draws found</strong>
+                        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.5rem;">
+                            Draw numbers: ${pendingImportData.map(d => '#' + d.drawNumber).slice(0, 5).join(', ')}
+                            ${pendingImportData.length > 5 ? '...' : ''}
+                        </p>
+                    </div>
+                `;
+                document.getElementById('confirmImportBtn').disabled = false;
+            } else {
+                preview.innerHTML = `
+                    <div style="background: var(--bg-tertiary); padding: 1rem; border-radius: 8px; margin-top: 1rem;">
+                        <strong style="color: var(--accent-red);">✗ No new draws found</strong>
+                        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.5rem;">
+                            Check CSV format or all draws already exist.
+                        </p>
+                    </div>
+                `;
+                document.getElementById('confirmImportBtn').disabled = true;
+            }
+        }
+
+        // Confirm import
+        async function confirmImport() {
+            if (pendingImportData.length === 0) return;
+            
+            lotteryData.draws = [...lotteryData.draws, ...pendingImportData];
+            lotteryData.draws.sort((a, b) => b.drawNumber - a.drawNumber);
+            
+            const saved = await saveData();
+            if (saved) {
+                closeModal('importModal');
+                document.getElementById('csvFileInput').value = '';
+                document.getElementById('importPreview').innerHTML = '';
+                pendingImportData = [];
+                document.getElementById('confirmImportBtn').disabled = true;
+            }
+        }
+
+        // Modal functions
+        function openModal(id) {
+            document.getElementById(id).classList.add('active');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+
+        // Toast notification
+        function showToast(message, type = 'info') {
+            const existing = document.querySelector('.toast');
+            if (existing) existing.remove();
+            
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `<span>${type === 'success' ? '✓' : type === 'error' ? '✗' : 'ℹ'}</span> ${message}`;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => toast.remove(), 3000);
+        }
+    </script>
+</body>
+</html>
