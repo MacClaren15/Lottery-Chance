@@ -91,13 +91,6 @@ git clone https://github.com/macclaren15/Lottery-Chance.git
 3. Click **Save**
 4. Your site will be live at `https://[username].github.io/Lottery-Chance/`
 
-### 4. Access the Admin Panel
-
-1. Navigate to `https://[username].github.io/Lottery-Chance/admin.html`
-2. Enter your GitHub Personal Access Token
-3. Check "Remember token on this device" for convenience
-4. Start adding lottery data!
-
 ## 📋 CSV Import Format
 
 To bulk import lottery draws, use this CSV format:
@@ -117,7 +110,7 @@ You can download a template from the Admin Panel.
 Probability = ((Number of occurrences / Total draws) + 0.01) × 100%
 ```
 
-The `+0.01` baseline ensures numbers with zero occurrences still display a minimal probability rather than 0%
+The `+0.01` baseline ensures numbers with zero occurrences still display a minimal probability rather than 0%.
 
 ### Best Practices
 - Use a token with minimal scopes (only `repo` is needed)
@@ -143,14 +136,43 @@ The `+0.01` baseline ensures numbers with zero occurrences still display a minim
 | Edge | ✅ |
 | Mobile Browsers | ✅ |
 
-## ⚠️ Disclaimer
+## ⚠️ Disclaimer & Responsible Gambling
 
-This application is for **entertainment and educational purposes only**. 
+### 🎰 Entertainment Only
+This application is provided **strictly for entertainment and educational purposes only**. It is NOT a gambling advice tool, prediction system, or financial guidance service.
 
-- Lottery outcomes are purely random
-- Past results do not influence future draws
-- No prediction system can guarantee winning numbers
-- Please gamble responsibly
+### 📊 No Predictive Value
+- **Lottery outcomes are completely random** — each draw is independent
+- **Past results have ZERO influence** on future draws (Gambler's Fallacy)
+- **Probability statistics shown are historical only** — they do not predict future outcomes
+- **No system, algorithm, or software can guarantee winning numbers**
+
+### ⚖️ Liability Disclaimer
+By using this website, you acknowledge and agree that:
+
+- **The creator(s) of this website are NOT responsible** for any actions taken by users based on information displayed
+- **Any financial decisions or gambling activities** are made entirely at your own risk
+- **Losses incurred from lottery participation** are solely your responsibility
+- **This website does not encourage, promote, or endorse gambling**
+
+### 🛑 Responsible Gambling
+If you choose to participate in lottery games:
+
+- **Set a budget** — Only spend what you can afford to lose
+- **Never chase losses** — Accept that losing is part of gambling
+- **Don't borrow money** to gamble
+- **Take breaks** — Gambling should not interfere with daily life
+- **Seek help if needed** — Contact gambling helplines if you feel you have a problem
+
+**Singapore Resources:**
+- National Council on Problem Gambling: **1800-6-668-668**
+- Website: [ncpg.org.sg](https://www.ncpg.org.sg/)
+
+---
+
+**🚨 If gambling is affecting your life, please seek help immediately.**
+
+---
 
 ## 📄 License
 
