@@ -35,7 +35,6 @@
             line-height: 1.6;
         }
 
-        /* Animated background */
         body::before {
             content: '';
             position: fixed;
@@ -58,7 +57,6 @@
             z-index: 1;
         }
 
-        /* Header */
         header {
             text-align: center;
             margin-bottom: 3rem;
@@ -125,7 +123,6 @@
             border-color: var(--gold);
         }
 
-        /* Stats Cards */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -168,7 +165,6 @@
             color: var(--gold);
         }
 
-        /* Recommended Numbers Section */
         .recommendations {
             background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
             border: 2px solid var(--gold);
@@ -250,7 +246,6 @@
             transform: scale(1.15) rotate(5deg);
         }
 
-        /* Probability Tables */
         .prob-section {
             background: var(--bg-secondary);
             border: 1px solid var(--border);
@@ -315,7 +310,6 @@
             transition: width 0.5s ease;
         }
 
-        /* Recent Draws */
         .recent-draws {
             background: var(--bg-secondary);
             border: 1px solid var(--border);
@@ -382,7 +376,6 @@
             border: none;
         }
 
-        /* Loading State */
         .loading {
             text-align: center;
             padding: 4rem;
@@ -403,7 +396,6 @@
             to { transform: rotate(360deg); }
         }
 
-        /* Algorithm Info */
         .algorithm-info {
             background: var(--bg-tertiary);
             border: 1px solid var(--border);
@@ -433,7 +425,6 @@
             font-size: 0.9rem;
         }
 
-        /* Footer */
         footer {
             text-align: center;
             padding: 2rem;
@@ -443,28 +434,6 @@
             margin-top: 2rem;
         }
 
-        /* Responsive */
-        @media (max-width: 600px) {
-            .container {
-                padding: 1rem;
-            }
-
-            h1 {
-                font-size: 1.75rem;
-            }
-
-            .ball {
-                width: 42px;
-                height: 42px;
-                font-size: 0.95rem;
-            }
-
-            .prob-grid {
-                grid-template-columns: repeat(auto-fill, minmax(65px, 1fr));
-            }
-        }
-
-        /* No Data State */
         .no-data {
             text-align: center;
             padding: 3rem;
@@ -477,7 +446,6 @@
             opacity: 0.5;
         }
 
-        /* Sync Status */
         .sync-status {
             display: flex;
             align-items: center;
@@ -500,6 +468,26 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
         }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 1rem;
+            }
+
+            h1 {
+                font-size: 1.75rem;
+            }
+
+            .ball {
+                width: 42px;
+                height: 42px;
+                font-size: 0.95rem;
+            }
+
+            .prob-grid {
+                grid-template-columns: repeat(auto-fill, minmax(65px, 1fr));
+            }
+        }
     </style>
 </head>
 <body>
@@ -511,7 +499,7 @@
             <p class="subtitle">Historical probability analysis based on past draws</p>
             <div class="sync-status">
                 <span class="sync-dot"></span>
-                <span>Cloud Synced • Read-Only View</span>
+                <span>GitHub Synced • Read-Only View</span>
             </div>
         </header>
 
@@ -521,7 +509,6 @@
         </div>
 
         <div id="content" style="display: none;">
-            <!-- Stats Cards -->
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-icon">📅</div>
@@ -545,41 +532,29 @@
                 </div>
             </div>
 
-            <!-- Recommended Numbers -->
             <div class="recommendations">
                 <div class="rec-grid">
                     <div class="rec-section">
                         <h3>🎯 Top 6 Main Numbers (Highest Probability)</h3>
-                        <div class="number-balls" id="topMainNumbers">
-                            <!-- Populated by JS -->
-                        </div>
+                        <div class="number-balls" id="topMainNumbers"></div>
                     </div>
                     <div class="rec-section">
                         <h3>➕ Top Additional Number</h3>
-                        <div class="number-balls" id="topAdditionalNumber">
-                            <!-- Populated by JS -->
-                        </div>
+                        <div class="number-balls" id="topAdditionalNumber"></div>
                     </div>
                 </div>
             </div>
 
-            <!-- Main Numbers Probability -->
             <div class="prob-section">
                 <h2>📊 All Main Numbers Probability (1-49)</h2>
-                <div class="prob-grid" id="mainProbGrid">
-                    <!-- Populated by JS -->
-                </div>
+                <div class="prob-grid" id="mainProbGrid"></div>
             </div>
 
-            <!-- Additional Numbers Probability -->
             <div class="prob-section">
                 <h2>💯 All Additional Numbers Probability (1-49)</h2>
-                <div class="prob-grid" id="additionalProbGrid">
-                    <!-- Populated by JS -->
-                </div>
+                <div class="prob-grid" id="additionalProbGrid"></div>
             </div>
 
-            <!-- Recent Draws -->
             <div class="recent-draws">
                 <h2>🏆 Recent Draws</h2>
                 <div style="overflow-x: auto;">
@@ -592,18 +567,15 @@
                                 <th>Additional</th>
                             </tr>
                         </thead>
-                        <tbody id="recentDrawsBody">
-                            <!-- Populated by JS -->
-                        </tbody>
+                        <tbody id="recentDrawsBody"></tbody>
                     </table>
                 </div>
             </div>
 
-            <!-- Algorithm Info -->
             <div class="algorithm-info">
                 <h3>📐 Algorithm</h3>
                 <code>Probability = ((Number of occurrences / Total draws) + 0.01) × 100%</code>
-                <p>Maximum 3 years of data stored. Data is synced across all devices via cloud storage.</p>
+                <p>Maximum 3 years of data stored. Data is synced via GitHub — free unlimited access!</p>
             </div>
         </div>
 
@@ -614,42 +586,38 @@
         </div>
 
         <footer>
-            <p>Singapore TOTO Lottery Probability Calculator • Data synced via cloud</p>
+            <p>Singapore TOTO Lottery Probability Calculator • Powered by GitHub</p>
             <p style="margin-top: 0.5rem; opacity: 0.7;">For entertainment purposes only. Lottery outcomes are random.</p>
         </footer>
     </div>
 
     <script>
-        // JSONBin Configuration
-        const JSONBIN_API_KEY = '$2a$10$R/mm5ZKrBGZrNUbiKNeNDeYN9mngd2TZHfmRauxTxXf/MHqsbfNnW';
-        const JSONBIN_BIN_ID = '695c6ec743b1c97be91bddba'; // Hardcoded bin ID
+        // GitHub Configuration
+        const GITHUB_USER = 'macclaren15';
+        const GITHUB_REPO = 'Lottery-Chance';
+        const DATA_FILE = 'data.json';
         
-        let lotteryData = {
-            draws: [],
-            lastUpdated: null
-        };
+        // Raw GitHub URL for reading (free, unlimited, no auth needed)
+        const DATA_URL = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/main/${DATA_FILE}?t=${Date.now()}`;
+        
+        let lotteryData = { draws: [], lastUpdated: null };
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
             await loadData();
         });
 
-        // Load data from JSONBin
+        // Load data from GitHub
         async function loadData() {
             const loading = document.getElementById('loading');
             const content = document.getElementById('content');
             const noData = document.getElementById('noData');
 
             try {
-                const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
-                    headers: {
-                        'X-Access-Key': JSONBIN_API_KEY
-                    }
-                });
+                const response = await fetch(DATA_URL);
 
                 if (response.ok) {
-                    const result = await response.json();
-                    lotteryData = result.record || { draws: [], lastUpdated: null };
+                    lotteryData = await response.json();
                     
                     if (lotteryData.draws && lotteryData.draws.length > 0) {
                         loading.style.display = 'none';
@@ -719,10 +687,7 @@
             document.getElementById('totalDraws').textContent = draws.length;
             
             if (draws.length > 0) {
-                const sortedDraws = [...draws].sort((a, b) => new Date(a.date) - new Date(b.date));
-                const firstDate = new Date(sortedDraws[0].date);
-                const lastDate = new Date(sortedDraws[sortedDraws.length - 1].date);
-                
+                const sortedDraws = [...draws].sort((a, b) => a.drawNumber - b.drawNumber);
                 document.getElementById('dataRange').textContent = 
                     `${sortedDraws[0].drawNumber} - ${sortedDraws[sortedDraws.length - 1].drawNumber}`;
             }
@@ -738,12 +703,10 @@
         function renderRecommendations() {
             const { mainProbs, additionalProbs } = calculateProbabilities();
             
-            // Sort and get top 6 main numbers
             const sortedMain = Object.entries(mainProbs)
                 .sort((a, b) => b[1] - a[1])
                 .slice(0, 6);
             
-            // Get top additional number
             const sortedAdditional = Object.entries(additionalProbs)
                 .sort((a, b) => b[1] - a[1])
                 .slice(0, 1);
