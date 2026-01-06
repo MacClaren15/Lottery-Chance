@@ -1,179 +1,172 @@
-# Lottery-Chance
-Lottery Chances – Historical Analysis & Probability Prediction App
+# 🎱 Singapore TOTO Probability Calculator
+
+A sleek, cloud-synced web application for tracking and analyzing Singapore TOTO lottery draw history. Calculate number probabilities based on historical data and get recommended numbers for your next draw.
+
+![GitHub Pages](https://img.shields.io/badge/Hosted%20on-GitHub%20Pages-blue?logo=github)
+![Storage](https://img.shields.io/badge/Storage-GitHub%20API-green?logo=github)
+![License](https://img.shields.io/badge/License-MIT-yellow)
+
+## ✨ Features
+
+### 📊 Public View (`index.html`)
+- **Real-time Probability Analysis** — See which numbers appear most frequently
+- **Top Recommended Numbers** — Get the 6 highest probability main numbers + top additional number
+- **Visual Probability Bars** — Quickly compare all 49 numbers at a glance
+- **Recent Draws Table** — View the latest lottery results
+- **Mobile Responsive** — Works beautifully on any device
 
-Lottery Chances is a data-driven application designed to help users analyze historical lottery results and generate probability-based insights. Built with flexibility and accuracy in mind, the app supports importing, filtering, visualizing, and exporting lottery draw data — making it a valuable tool for both casual players and data enthusiasts.
+### 🔐 Admin Panel (`admin.html`)
+- **Secure Access** — Protected by your GitHub Personal Access Token
+- **Add New Draws** — Visual number picker for easy data entry
+- **Bulk Import** — Upload CSV files with multiple draws
+- **Export Data** — Download your data as CSV backup
+- **Delete & Clear** — Manage individual draws or reset all data
+- **Cloud Synced** — Data persists across all your devices
 
-🌟 Key Features
-1. Historical Data Analysis
+## 🌐 Live Demo
+
+👉 **[View Live Site](https://macclaren15.github.io/Lottery-Chance/)**
 
-Automatically processes past lottery results to identify number frequencies, hot/cold trends, and probability distributions.
+## 🛠️ How It Works
 
-Updates probability charts dynamically whenever new data is added.
+```
+┌─────────────────┐         ┌─────────────────┐
+│   Public View   │  reads  │                 │
+│   (index.html)  │ ──────► │   data.json     │
+└─────────────────┘         │   (GitHub Repo) │
+                            │                 │
+┌─────────────────┐  read/  │                 │
+│   Admin Panel   │  write  │                 │
+│   (admin.html)  │ ◄─────► │                 │
+└─────────────────┘         └─────────────────┘
+        │
+        ▼
+  GitHub API + Token
+```
+
+### Storage Solution
+Instead of using external databases or paid services, this project uses **GitHub itself as the database**:
 
-2. Manual Entry for Latest Draws
+- **Reading**: The public page fetches `data.json` directly from the repository (free, unlimited)
+- **Writing**: The admin panel uses the GitHub API with your Personal Access Token to update `data.json`
 
-Easily add the most recent lottery results through a simple input form.
+**Benefits:**
+- ✅ 100% free forever — no API limits or quotas
+- ✅ Built-in version history via Git
+- ✅ Data lives in your own repository
+- ✅ Works across all devices
 
-All charts and metrics recalculate instantly after each update.
+## 📁 File Structure
 
-3. CSV/Excel Import Support
+```
+Lottery-Chance/
+├── index.html      # Public read-only view
+├── admin.html      # Password-protected admin panel
+├── data.json       # Lottery data storage
+└── README.md       # This file
+```
 
-Import large volumes of historical data with ease.
+## 🚀 Setup Instructions
 
-Supports .csv and .xlsx formats for expanding or refreshing your dataset anytime.
+### 1. Fork or Clone This Repository
 
-Automatically handles duplicates and malformed rows (optional behavior depending on the implementation).
+```bash
+git clone https://github.com/macclaren15/Lottery-Chance.git
+```
 
-4. Advanced Filtering Tools
+### 2. Create a GitHub Personal Access Token
 
-Filter results by:
+1. Go to **GitHub Settings** → **Developer settings** → **Personal access tokens** → **Tokens (classic)**
+2. Click **Generate new token (classic)**
+3. Set:
+   - **Note**: `TOTO Lottery App`
+   - **Expiration**: No expiration (or your preference)
+   - **Scopes**: ✅ `repo`
+4. Click **Generate token** and copy it immediately
 
-Date Range (e.g., last 3 months, a specific year, custom range)
+### 3. Enable GitHub Pages
 
-Drawn Numbers (e.g., show all draws where number 21 appeared)
+1. Go to your repository **Settings** → **Pages**
+2. Under **Source**, select `main` branch
+3. Click **Save**
+4. Your site will be live at `https://[username].github.io/Lottery-Chance/`
 
-Allows focused analysis on specific patterns or subsets of results.
+### 4. Access the Admin Panel
 
-5. Data Export Function
+1. Navigate to `https://[username].github.io/Lottery-Chance/admin.html`
+2. Enter your GitHub Personal Access Token
+3. Check "Remember token on this device" for convenience
+4. Start adding lottery data!
 
-Export your entire dataset — including custom-added entries — into CSV or Excel format.
+## 📋 CSV Import Format
 
-Ideal for backup, sharing, and further external analysis.
+To bulk import lottery draws, use this CSV format:
 
-6. Probability Prediction Module
+```csv
+DrawNumber,Date,Num1,Num2,Num3,Num4,Num5,Num6,Additional
+3961,2024-01-01,1,12,23,34,45,49,7
+3962,2024-01-04,5,15,25,35,40,42,18
+3963,2024-01-08,3,17,28,33,41,47,22
+```
 
-Uses historical frequencies to generate statistical scoring for each number.
+You can download a template from the Admin Panel.
 
-Helps users understand:
+## 🔢 Probability Algorithm
 
-Most frequently drawn numbers
+```
+Probability = ((Number of occurrences / Total draws) + 0.01) × 100%
+```
 
-Least drawn numbers
+The `+0.01` baseline ensures numbers with zero occurrences still display a minimal probability rather than 0%
 
-Weighted probability ranking based on historical patterns
+### Best Practices
+- Use a token with minimal scopes (only `repo` is needed)
+- Set an expiration date if you prefer
+- Don't share your token with anyone
+- Revoke and regenerate if you suspect compromise
 
-📁 Project Structure (Example)
-/LotteryChances
-│── data/
-│   ├── historical_draws.csv
-│   └── sample_import.xlsx
-│
-│── src/
-│   ├── importer.py
-│   ├── analyzer.py
-│   ├── predictor.py
-│   ├── filters.py
-│   └── exporter.py
-│
-│── ui/
-│   ├── main_app.py
-│   └── charts/
-│
-│── requirements.txt
-│── README.md
-│── LICENSE
+## 🎨 Tech Stack
 
+- **Frontend**: Vanilla HTML, CSS, JavaScript
+- **Fonts**: [Outfit](https://fonts.google.com/specimen/Outfit), [Space Mono](https://fonts.google.com/specimen/Space+Mono)
+- **Storage**: GitHub API + Repository
+- **Hosting**: GitHub Pages
+- **External Dependencies**: None! 🎉
 
-(You can adjust this section based on your actual project layout.)
+## 📱 Browser Support
 
-🔧 Installation
-Prerequisites
+| Browser | Supported |
+|---------|-----------|
+| Chrome | ✅ |
+| Firefox | ✅ |
+| Safari | ✅ |
+| Edge | ✅ |
+| Mobile Browsers | ✅ |
 
-Python 3.9+
+## ⚠️ Disclaimer
 
-Recommended libraries (examples):
+This application is for **entertainment and educational purposes only**. 
 
-pandas
+- Lottery outcomes are purely random
+- Past results do not influence future draws
+- No prediction system can guarantee winning numbers
+- Please gamble responsibly
 
-numpy
+## 📄 License
 
-matplotlib or plotly
+This project is open source and available under the [MIT License](LICENSE).
 
-openpyxl (for Excel)
+## 🙏 Acknowledgments
 
-tkinter, streamlit, or PyQt (depending on your UI)
+- Singapore Pools for the TOTO lottery game
+- GitHub for free hosting and API access
 
-Setup
-git clone https://github.com/yourusername/lottery-chances.git
-cd lottery-chances
-pip install -r requirements.txt
+---
 
-🚀 How to Use
-1. Launch the Application
-python src/main_app.py
-
-2. Import Historical Data
-
-Navigate to Import → CSV/Excel
-
-Select your file
-
-Review and confirm loaded rows
-
-3. Add a New Draw
-
-Go to Add Draw
-
-Enter draw date and winning numbers
-
-Save to update charts immediately
-
-4. Filter Insights
-
-Choose Filters
-
-Select a date range or specific number to focus your analysis
-
-5. Export Data
-
-Navigate to Export
-
-Choose CSV or Excel format
-
-Save your entire dataset for external use
-
-📊 Probability Calculation Approach
-
-The app uses statistical frequency analysis to generate probability scores:
-
-Frequency Count: How often each number appeared historically
-
-Relative Weighting: Frequency ÷ total draws
-
-Trend Analysis (Optional):
-
-Last-N draws weighting
-
-Hot & cold classification
-
-Prediction Output:
-
-Ranked list of numbers by probability score
-
-Customizable number set recommendations
-
-🛠 Future Enhancements (Optional Section)
-
-Automated web scraping of official results
-
-Machine learning-based prediction model
-
-Support for multiple lottery formats
-
-Dashboard with interactive charts
-
-Cloud sync (Firebase / AWS DynamoDB)
-
-Mobile version
-
-📄 License
-
-This project is open-source. You may include MIT, Apache, or any license you prefer.
-
-🙏 Acknowledgements
-
-All historical data belongs to their respective lottery operators.
-
-This app is designed purely for analysis and does not guarantee winning results.
-
-
+<p align="center">
+  Made with ❤️ in Singapore
+  <br>
+  <a href="https://macclaren15.github.io/Lottery-Chance/">View Live</a> •
+  <a href="https://github.com/macclaren15/Lottery-Chance/issues">Report Bug</a> •
+  <a href="https://github.com/macclaren15/Lottery-Chance/issues">Request Feature</a>
+</p>
