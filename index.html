@@ -622,7 +622,7 @@
     <script>
         // JSONBin Configuration
         const JSONBIN_API_KEY = '$2a$10$R/mm5ZKrBGZrNUbiKNeNDeYN9mngd2TZHfmRauxTxXf/MHqsbfNnW';
-        const JSONBIN_BIN_ID = localStorage.getItem('toto_bin_id') || null;
+        const JSONBIN_BIN_ID = '695c6ec743b1c97be91bddba'; // Hardcoded bin ID
         
         let lotteryData = {
             draws: [],
@@ -641,16 +641,7 @@
             const noData = document.getElementById('noData');
 
             try {
-                // First, try to get bin ID from a known location or create discovery
-                let binId = await discoverBinId();
-                
-                if (!binId) {
-                    loading.style.display = 'none';
-                    noData.style.display = 'block';
-                    return;
-                }
-
-                const response = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
+                const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
                     headers: {
                         'X-Access-Key': JSONBIN_API_KEY
                     }
@@ -659,9 +650,6 @@
                 if (response.ok) {
                     const result = await response.json();
                     lotteryData = result.record || { draws: [], lastUpdated: null };
-                    
-                    // Store bin ID for future use
-                    localStorage.setItem('toto_bin_id', binId);
                     
                     if (lotteryData.draws && lotteryData.draws.length > 0) {
                         loading.style.display = 'none';
@@ -679,39 +667,6 @@
                 loading.style.display = 'none';
                 noData.style.display = 'block';
             }
-        }
-
-        // Discover bin ID - check for master config bin
-        async function discoverBinId() {
-            // Check localStorage first
-            const storedBinId = localStorage.getItem('toto_bin_id');
-            if (storedBinId) {
-                return storedBinId;
-            }
-
-            // Try to fetch from a config bin (you'll set this up in admin)
-            // For now, we'll use the collection approach
-            try {
-                const response = await fetch('https://api.jsonbin.io/v3/c/uncategorized/bins', {
-                    headers: {
-                        'X-Access-Key': JSONBIN_API_KEY
-                    }
-                });
-
-                if (response.ok) {
-                    const bins = await response.json();
-                    // Look for our TOTO bin
-                    for (const bin of bins) {
-                        if (bin.snippetMeta && bin.snippetMeta.name === 'TOTO_LOTTERY_DATA') {
-                            return bin.record;
-                        }
-                    }
-                }
-            } catch (e) {
-                console.log('Could not discover bin from collection');
-            }
-
-            return null;
         }
 
         // Render all data

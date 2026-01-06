@@ -822,8 +822,9 @@
         // Configuration
         const JSONBIN_API_KEY = '$2a$10$R/mm5ZKrBGZrNUbiKNeNDeYN9mngd2TZHfmRauxTxXf/MHqsbfNnW';
         const ADMIN_PASSWORD = 'Mike@Lottery'; // Change this to your preferred password
+        const JSONBIN_BIN_ID = '695c6ec743b1c97be91bddba'; // Hardcoded bin ID
         
-        let binId = localStorage.getItem('toto_bin_id') || null;
+        let binId = JSONBIN_BIN_ID;
         let lotteryData = { draws: [], lastUpdated: null };
         let pendingImportData = [];
 
@@ -874,38 +875,9 @@
             location.reload();
         }
 
-        // Initialize data - create bin if needed
+        // Initialize data - use hardcoded bin ID
         async function initializeData() {
             updateStatus('Connecting...', false);
-            
-            if (!binId) {
-                // Try to create a new bin
-                try {
-                    const response = await fetch('https://api.jsonbin.io/v3/b', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-Access-Key': JSONBIN_API_KEY,
-                            'X-Bin-Name': 'TOTO_LOTTERY_DATA'
-                        },
-                        body: JSON.stringify({ draws: [], lastUpdated: new Date().toISOString() })
-                    });
-
-                    if (response.ok) {
-                        const result = await response.json();
-                        binId = result.metadata.id;
-                        localStorage.setItem('toto_bin_id', binId);
-                        showToast('Created new data storage', 'success');
-                    } else {
-                        throw new Error('Failed to create bin');
-                    }
-                } catch (error) {
-                    updateStatus('Connection failed', false);
-                    showToast('Failed to initialize storage', 'error');
-                    return;
-                }
-            }
-
             await loadData();
         }
 
