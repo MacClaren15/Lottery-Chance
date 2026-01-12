@@ -287,11 +287,50 @@
             padding: 0.75rem 0.5rem;
             text-align: center;
             transition: all 0.2s ease;
+            position: relative;
         }
 
         .prob-item:hover {
             border-color: var(--gold);
             background: var(--bg-primary);
+        }
+
+        .prob-item.top-number {
+            background: rgba(244, 185, 66, 0.15);
+            border: 2px solid var(--gold);
+            box-shadow: 0 0 15px rgba(244, 185, 66, 0.2);
+        }
+
+        .prob-item.top-number .prob-number {
+            color: var(--gold);
+        }
+
+        .prob-item.top-number-additional {
+            background: rgba(88, 166, 255, 0.15);
+            border: 2px solid var(--accent-blue);
+            box-shadow: 0 0 15px rgba(88, 166, 255, 0.2);
+        }
+
+        .prob-item.top-number-additional .prob-number {
+            color: var(--accent-blue);
+        }
+
+        .top-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            font-size: 0.75rem;
+            background: var(--bg-primary);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .prob-bar-fill.additional-bar {
+            background: linear-gradient(90deg, var(--accent-blue), #7BC8FF);
         }
 
         .prob-number {
@@ -751,20 +790,33 @@
             const maxMainProb = Math.max(...Object.values(mainProbs));
             const maxAdditionalProb = Math.max(...Object.values(additionalProbs));
 
+            // Get top 6 main numbers and top 1 additional number
+            const topMainNumbers = Object.entries(mainProbs)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 6)
+                .map(([num]) => parseInt(num));
+            
+            const topAdditionalNumber = Object.entries(additionalProbs)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 1)
+                .map(([num]) => parseInt(num))[0];
+
             const mainGrid = document.getElementById('mainProbGrid');
             mainGrid.innerHTML = '';
             
             for (let i = 1; i <= 49; i++) {
                 const prob = mainProbs[i];
                 const barWidth = (prob / maxMainProb) * 100;
+                const isTop = topMainNumbers.includes(i);
                 
                 mainGrid.innerHTML += `
-                    <div class="prob-item">
+                    <div class="prob-item ${isTop ? 'top-number' : ''}">
                         <div class="prob-number">${i}</div>
                         <div class="prob-percent">${prob.toFixed(1)}%</div>
                         <div class="prob-bar">
                             <div class="prob-bar-fill" style="width: ${barWidth}%"></div>
                         </div>
+                        ${isTop ? '<div class="top-badge">⭐</div>' : ''}
                     </div>
                 `;
             }
@@ -775,14 +827,16 @@
             for (let i = 1; i <= 49; i++) {
                 const prob = additionalProbs[i];
                 const barWidth = (prob / maxAdditionalProb) * 100;
+                const isTop = i === topAdditionalNumber;
                 
                 additionalGrid.innerHTML += `
-                    <div class="prob-item">
+                    <div class="prob-item ${isTop ? 'top-number-additional' : ''}">
                         <div class="prob-number">${i}</div>
                         <div class="prob-percent">${prob.toFixed(1)}%</div>
                         <div class="prob-bar">
-                            <div class="prob-bar-fill" style="width: ${barWidth}%"></div>
+                            <div class="prob-bar-fill ${isTop ? 'additional-bar' : ''}" style="width: ${barWidth}%"></div>
                         </div>
+                        ${isTop ? '<div class="top-badge">⭐</div>' : ''}
                     </div>
                 `;
             }
