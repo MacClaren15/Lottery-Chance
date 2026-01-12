@@ -610,6 +610,12 @@
             display: none !important;
         }
 
+        .date-sub {
+            font-size: 0.7rem;
+            font-weight: 400;
+            color: var(--text-secondary);
+        }
+
         .remember-token {
             display: flex;
             align-items: center;
@@ -1140,8 +1146,19 @@
             
             if (draws.length > 0) {
                 const sortedDraws = [...draws].sort((a, b) => a.drawNumber - b.drawNumber);
-                document.getElementById('adminDataRange').textContent = 
-                    `#${sortedDraws[0].drawNumber} - #${sortedDraws[sortedDraws.length - 1].drawNumber}`;
+                const firstDraw = sortedDraws[0];
+                const lastDraw = sortedDraws[sortedDraws.length - 1];
+                
+                const formatDate = (dateStr) => {
+                    return new Date(dateStr).toLocaleDateString('en-SG', { 
+                        day: 'numeric', 
+                        month: 'short',
+                        year: 'numeric'
+                    });
+                };
+                
+                document.getElementById('adminDataRange').innerHTML = 
+                    `#${firstDraw.drawNumber} <span class="date-sub">(${formatDate(firstDraw.date)})</span><br>to #${lastDraw.drawNumber} <span class="date-sub">(${formatDate(lastDraw.date)})</span>`;
             } else {
                 document.getElementById('adminDataRange').textContent = '-';
             }

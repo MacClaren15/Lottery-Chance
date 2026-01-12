@@ -165,6 +165,18 @@
             color: var(--gold);
         }
 
+        .stat-value .date-sub {
+            font-size: 0.7rem;
+            font-weight: 400;
+            color: var(--text-secondary);
+            display: block;
+            margin-top: 0.1rem;
+        }
+
+        .stat-value br {
+            line-height: 0.5;
+        }
+
         .recommendations {
             background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
             border: 2px solid var(--gold);
@@ -688,8 +700,19 @@
             
             if (draws.length > 0) {
                 const sortedDraws = [...draws].sort((a, b) => a.drawNumber - b.drawNumber);
-                document.getElementById('dataRange').textContent = 
-                    `${sortedDraws[0].drawNumber} - ${sortedDraws[sortedDraws.length - 1].drawNumber}`;
+                const firstDraw = sortedDraws[0];
+                const lastDraw = sortedDraws[sortedDraws.length - 1];
+                
+                const formatDate = (dateStr) => {
+                    return new Date(dateStr).toLocaleDateString('en-SG', { 
+                        day: 'numeric', 
+                        month: 'short',
+                        year: 'numeric'
+                    });
+                };
+                
+                document.getElementById('dataRange').innerHTML = 
+                    `#${firstDraw.drawNumber} <span class="date-sub">(${formatDate(firstDraw.date)})</span><br>to<br>#${lastDraw.drawNumber} <span class="date-sub">(${formatDate(lastDraw.date)})</span>`;
             }
 
             if (lotteryData.lastUpdated) {
