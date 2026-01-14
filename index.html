@@ -125,48 +125,48 @@
 
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
         }
 
         .stat-card {
             background: var(--bg-secondary);
             border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 1.5rem;
+            border-radius: 12px;
+            padding: 1rem;
             text-align: center;
             transition: all 0.3s ease;
         }
 
         .stat-card:hover {
-            transform: translateY(-5px);
+            transform: translateY(-3px);
             border-color: var(--gold);
-            box-shadow: 0 10px 40px rgba(244, 185, 66, 0.1);
+            box-shadow: 0 8px 30px rgba(244, 185, 66, 0.1);
         }
 
         .stat-icon {
-            font-size: 2rem;
-            margin-bottom: 0.5rem;
+            font-size: 1.5rem;
+            margin-bottom: 0.35rem;
         }
 
         .stat-label {
             color: var(--text-secondary);
-            font-size: 0.85rem;
+            font-size: 0.7rem;
             text-transform: uppercase;
             letter-spacing: 1px;
-            margin-bottom: 0.25rem;
+            margin-bottom: 0.2rem;
         }
 
         .stat-value {
             font-family: 'Space Mono', monospace;
-            font-size: 1.5rem;
+            font-size: 1.1rem;
             font-weight: 700;
             color: var(--gold);
         }
 
         .stat-value .date-sub {
-            font-size: 0.7rem;
+            font-size: 0.6rem;
             font-weight: 400;
             color: var(--text-secondary);
             display: block;
@@ -180,8 +180,8 @@
         .recommendations {
             background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
             border: 2px solid var(--gold);
-            border-radius: 20px;
-            padding: 2rem;
+            border-radius: 24px;
+            padding: 2.5rem;
             margin-bottom: 2rem;
             position: relative;
         }
@@ -189,14 +189,14 @@
         .recommendations::before {
             content: '⭐ RECOMMENDED';
             position: absolute;
-            top: -12px;
+            top: -14px;
             left: 50%;
             transform: translateX(-50%);
             background: var(--gold);
             color: var(--bg-primary);
-            padding: 0.25rem 1rem;
+            padding: 0.35rem 1.25rem;
             border-radius: 20px;
-            font-size: 0.75rem;
+            font-size: 0.85rem;
             font-weight: 700;
             letter-spacing: 1px;
         }
@@ -204,8 +204,8 @@
         .rec-grid {
             display: grid;
             grid-template-columns: 2fr 1fr;
-            gap: 2rem;
-            margin-top: 1rem;
+            gap: 2.5rem;
+            margin-top: 1.5rem;
         }
 
         @media (max-width: 768px) {
@@ -216,8 +216,8 @@
 
         .rec-section h3 {
             color: var(--text-secondary);
-            font-size: 0.9rem;
-            margin-bottom: 1rem;
+            font-size: 1rem;
+            margin-bottom: 1.25rem;
             display: flex;
             align-items: center;
             gap: 0.5rem;
@@ -226,32 +226,32 @@
         .number-balls {
             display: flex;
             flex-wrap: wrap;
-            gap: 0.75rem;
+            gap: 1rem;
         }
 
         .ball {
-            width: 50px;
-            height: 50px;
+            width: 60px;
+            height: 60px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             font-family: 'Space Mono', monospace;
             font-weight: 700;
-            font-size: 1.1rem;
+            font-size: 1.3rem;
             transition: all 0.3s ease;
         }
 
         .ball-main {
             background: linear-gradient(145deg, var(--gold) 0%, var(--gold-dark) 100%);
             color: var(--bg-primary);
-            box-shadow: 0 4px 15px rgba(244, 185, 66, 0.3);
+            box-shadow: 0 6px 20px rgba(244, 185, 66, 0.4);
         }
 
         .ball-additional {
             background: linear-gradient(145deg, var(--accent-blue) 0%, #2D5FA8 100%);
             color: white;
-            box-shadow: 0 4px 15px rgba(88, 166, 255, 0.3);
+            box-shadow: 0 6px 20px rgba(88, 166, 255, 0.4);
         }
 
         .ball:hover {
@@ -530,9 +530,17 @@
             }
 
             .ball {
-                width: 42px;
-                height: 42px;
-                font-size: 0.95rem;
+                width: 50px;
+                height: 50px;
+                font-size: 1.1rem;
+            }
+
+            .number-balls {
+                gap: 0.75rem;
+            }
+
+            .recommendations {
+                padding: 2rem 1.5rem;
             }
 
             .prob-grid {
@@ -765,10 +773,13 @@
         function renderRecommendations() {
             const { mainProbs, additionalProbs } = calculateProbabilities();
             
+            // Get top 6 main numbers, then sort ascending
             const sortedMain = Object.entries(mainProbs)
                 .sort((a, b) => b[1] - a[1])
-                .slice(0, 6);
+                .slice(0, 6)
+                .sort((a, b) => parseInt(a[0]) - parseInt(b[0]));
             
+            // Get top additional number
             const sortedAdditional = Object.entries(additionalProbs)
                 .sort((a, b) => b[1] - a[1])
                 .slice(0, 1);
