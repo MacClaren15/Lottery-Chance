@@ -1,6 +1,19 @@
 {
   "draws": [
     {
+      "drawNumber": 4162,
+      "date": "2026-03-05",
+      "mainNumbers": [
+        1,
+        5,
+        12,
+        15,
+        22,
+        42
+      ],
+      "additionalNumber": 37
+    },
+    {
       "drawNumber": 4161,
       "date": "2026-03-02",
       "mainNumbers": [
@@ -1587,5 +1600,5 @@
       "additionalNumber": 11
     }
   ],
-  "lastUpdated": "2026-03-05T05:12:04.956Z"
+  "lastUpdated": "2026-03-09T06:22:13.966Z"
 }
